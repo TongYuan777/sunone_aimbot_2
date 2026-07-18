@@ -253,7 +253,14 @@ function Invoke-DownloadFile {
     if (Test-Path -LiteralPath $tmp) {
         Remove-Item -LiteralPath $tmp -Force
     }
-    Invoke-WebRequest -Uri $Uri -OutFile $tmp -MaximumRedirection 10
+    $originalSecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13 -bor [Net.SecurityProtocolType]::SystemDefault
+        Invoke-WebRequest -Uri $Uri -OutFile $tmp -MaximumRedirection 10 -UseBasicParsing
+    }
+    finally {
+        [Net.ServicePointManager]::SecurityProtocol = $originalSecurityProtocol
+    }
     Move-Item -LiteralPath $tmp -Destination $OutFile -Force
 }
 
