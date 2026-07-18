@@ -382,6 +382,8 @@ if(MSVC)
         $<$<COMPILE_LANGUAGE:CXX>:/sdl>
         $<$<COMPILE_LANGUAGE:CXX>:/permissive->
         $<$<COMPILE_LANGUAGE:CXX>:/EHsc>
+        $<$<COMPILE_LANGUAGE:CXX>:/utf-8>
+        /utf-8
     )
 endif()
 

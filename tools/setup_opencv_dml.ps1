@@ -158,7 +158,14 @@ function Invoke-Download {
         return
     }
 
-    Invoke-WebRequest -Uri $Uri -OutFile $OutFile -MaximumRedirection 10
+    $originalSecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13 -bor [Net.SecurityProtocolType]::SystemDefault
+        Invoke-WebRequest -Uri $Uri -OutFile $OutFile -MaximumRedirection 10 -UseBasicParsing
+    }
+    finally {
+        [Net.ServicePointManager]::SecurityProtocol = $originalSecurityProtocol
+    }
 }
 
 function Test-ValidInstallerFile {
