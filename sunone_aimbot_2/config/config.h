@@ -105,6 +105,14 @@ public:
     int makcu_baudrate;
     std::string makcu_port;
 
+    // gamepad (XInput + ViGEm)
+    int gamepad_player_index;       // XInput 玩家索引 (0-3)
+    float gamepad_stick_scale;      // 鼠标 counts -> 摇杆值 的转换比例
+    int gamepad_deadzone;           // 摇杆死区 (0-32767)
+    std::string gamepad_aim_button;   // 自瞄触发按键 (如 "RT")
+    std::string gamepad_shoot_button; // 射击触发按键 (如 "A")
+    std::string gamepad_zoom_button;  // 缩放触发按键 (如 "LT")
+
     // Mouse shooting
     bool auto_shoot;
     float bScope_multiplier;

@@ -11,6 +11,7 @@
     <ClCompile Include="mouse\kmboxA.cpp" />
     <ClCompile Include="mouse\MouseInput.cpp" />
     <ClCompile Include="mouse\mouse.cpp" />
+    <ClCompile Include="mouse\GamepadViGEm.cpp" />
     <ClCompile Include="mouse\rzctl.cpp" />
     <ClCompile Include="mouse\Teensy41RawHid.cpp" />
     <ClCompile Include="mouse\Arduino.cpp" />
@@ -84,6 +85,7 @@
     <ClInclude Include="mouse\kmboxA.h" />
     <ClInclude Include="mouse\MouseInput.h" />
     <ClInclude Include="mouse\mouse.h" />
+    <ClInclude Include="mouse\GamepadViGEm.h" />
     <ClInclude Include="mouse\rzctl.h" />
     <ClInclude Include="mouse\Teensy41RawHid.h" />
     <ClInclude Include="mouse\Arduino.h" />

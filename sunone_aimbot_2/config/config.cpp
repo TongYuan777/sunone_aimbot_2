@@ -148,6 +148,14 @@ bool Config::loadConfig(const std::string& filename)
         makcu_baudrate = 115200;
         makcu_port = "COM0";
 
+        // gamepad (XInput + ViGEm)
+        gamepad_player_index = 0;
+        gamepad_stick_scale = 100.0f;
+        gamepad_deadzone = 2000;
+        gamepad_aim_button = "RT";
+        gamepad_shoot_button = "A";
+        gamepad_zoom_button = "LT";
+
         // Mouse shooting
         auto_shoot = false;
         bScope_multiplier = 1.0f;
@@ -474,6 +482,14 @@ bool Config::loadConfig(const std::string& filename)
     makcu_baudrate = get_long("makcu_baudrate", 115200);
     makcu_port = get_string("makcu_port", "COM0");
 
+    // gamepad (XInput + ViGEm)
+    gamepad_player_index = static_cast<int>(get_long("gamepad_player_index", 0));
+    gamepad_stick_scale = static_cast<float>(get_double("gamepad_stick_scale", 100.0));
+    gamepad_deadzone = static_cast<int>(get_long("gamepad_deadzone", 2000));
+    gamepad_aim_button = get_string("gamepad_aim_button", "RT");
+    gamepad_shoot_button = get_string("gamepad_shoot_button", "A");
+    gamepad_zoom_button = get_string("gamepad_zoom_button", "LT");
+
     // Mouse shooting
     auto_shoot = get_bool("auto_shoot", false);
     bScope_multiplier = (float)get_double("bScope_multiplier", 1.2);
@@ -773,6 +789,18 @@ bool Config::saveConfig(const std::string& filename)
     file << "# Makcu\n"
         << "makcu_baudrate = " << makcu_baudrate << "\n"
 		<< "makcu_port = " << makcu_port << "\n\n";
+
+    // gamepad (XInput + ViGEm)
+    file << "# Gamepad (XInput + ViGEm)\n"
+        << "# Requires ViGEmBus driver installed and ViGEmClient.dll in PATH.\n"
+        << "gamepad_player_index = " << gamepad_player_index << "\n"
+        << std::fixed << std::setprecision(2)
+        << "gamepad_stick_scale = " << gamepad_stick_scale << "\n"
+        << std::defaultfloat
+        << "gamepad_deadzone = " << gamepad_deadzone << "\n"
+        << "gamepad_aim_button = " << gamepad_aim_button << "\n"
+        << "gamepad_shoot_button = " << gamepad_shoot_button << "\n"
+        << "gamepad_zoom_button = " << gamepad_zoom_button << "\n\n";
 
     // Mouse shooting
     file << "# Mouse shooting\n"

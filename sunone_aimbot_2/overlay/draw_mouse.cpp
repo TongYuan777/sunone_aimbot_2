@@ -14,6 +14,7 @@
 #include "overlay/ui_sections.h"
 #include "include/other_tools.h"
 #include "kmbox_net/picture.h"
+#include "GamepadViGEm.h"
 
 std::string ghub_version = get_ghub_version();
 
@@ -421,9 +422,9 @@ static void draw_mouse_page(MouseSettingsPage page)
     }
 
     if (shouldDrawMousePage(page, MouseSettingsPage::Input) &&
-        OverlayUI::BeginSection("Input Method", "mouse_section_input_method"))
+        OverlayUI::BeginSection("输入方式 / Input Method", "mouse_section_input_method"))
     {
-        std::vector<std::string> input_methods = { "WIN32", "GHUB", "RAZER", "ARDUINO", "RP2350", "TEENSY41", "TEENSY41_HID", "KMBOX_NET", "KMBOX_A", "MAKCU" };
+        std::vector<std::string> input_methods = { "WIN32", "GHUB", "RAZER", "ARDUINO", "RP2350", "TEENSY41", "TEENSY41_HID", "KMBOX_NET", "KMBOX_A", "MAKCU", "GAMEPAD_VIGEM" };
 
         std::vector<const char*> method_items;
         method_items.reserve(input_methods.size());
@@ -442,7 +443,7 @@ static void draw_mouse_page(MouseSettingsPage page)
             }
         }
 
-        if (OverlayUI::ComboRow("Mouse Input Method", &input_method_index, method_items.data(), static_cast<int>(method_items.size())))
+        if (OverlayUI::ComboRow("鼠标输入方式 / Mouse Input Method", &input_method_index, method_items.data(), static_cast<int>(method_items.size())))
         {
             std::string new_input_method = input_methods[input_method_index];
 
@@ -937,6 +938,82 @@ static void draw_mouse_page(MouseSettingsPage page)
             {
                 ImGui::TextColored(ImVec4(255, 0, 0, 255), "Makcu not connected");
             }
+        }
+        else if (config.input_method == "GAMEPAD_VIGEM")
+        {
+            // 玩家索引下拉框 (0-3)
+            std::vector<std::string> player_list = { "0", "1", "2", "3" };
+            std::vector<const char*> player_items;
+            for (const auto& p : player_list) player_items.push_back(p.c_str());
+            int player_idx = config.gamepad_player_index;
+            if (player_idx < 0 || player_idx > 3) player_idx = 0;
+            if (OverlayUI::ComboRow("玩家索引 / Player Index", &player_idx, player_items.data(), static_cast<int>(player_items.size())))
+            {
+                config.gamepad_player_index = player_idx;
+                OverlayConfig_MarkDirty();
+                input_method_changed.store(true);
+            }
+
+            // 摇杆灵敏度
+            float stick_scale = config.gamepad_stick_scale;
+            if (OverlayUI::SliderFloatRow("摇杆灵敏度 / Stick Scale", &stick_scale, 1.0f, 1000.0f))
+            {
+                config.gamepad_stick_scale = stick_scale;
+                OverlayConfig_MarkDirty();
+            }
+
+            // 死区
+            int deadzone = config.gamepad_deadzone;
+            if (OverlayUI::SliderIntRow("摇杆死区 / Deadzone", &deadzone, 0, 10000))
+            {
+                config.gamepad_deadzone = deadzone;
+                OverlayConfig_MarkDirty();
+            }
+
+            // 手柄按键下拉框辅助函数
+            auto drawButtonCombo = [&](const char* label, std::string& configField)
+            {
+                auto buttons = GamepadButtonName::All();
+                std::vector<const char*> btn_items;
+                btn_items.reserve(buttons.size());
+                for (const auto& b : buttons) btn_items.push_back(b.c_str());
+                int idx = 0;
+                for (size_t i = 0; i < buttons.size(); ++i)
+                {
+                    if (buttons[i] == configField) { idx = static_cast<int>(i); break; }
+                }
+                if (OverlayUI::ComboRow(label, &idx, btn_items.data(), static_cast<int>(btn_items.size())))
+                {
+                    configField = buttons[idx];
+                    OverlayConfig_MarkDirty();
+                    input_method_changed.store(true);
+                }
+            };
+
+            drawButtonCombo("自瞄按键 / Aim Button", config.gamepad_aim_button);
+            drawButtonCombo("射击按键 / Shoot Button", config.gamepad_shoot_button);
+            drawButtonCombo("缩放按键 / Zoom Button", config.gamepad_zoom_button);
+
+            // 连接状态
+            if (activeMouseInputOwner && activeMouseInputOwner->gamepad())
+            {
+                GamepadViGEm* gamepad = activeMouseInputOwner->gamepad();
+                if (gamepad->isVirtualConnected())
+                    ImGui::TextColored(ImVec4(0, 255, 0, 255), "虚拟手柄：已连接 / Virtual controller: Connected");
+                else
+                    ImGui::TextColored(ImVec4(255, 0, 0, 255), "虚拟手柄：未连接 / Virtual controller: Not connected");
+
+                if (gamepad->isPhysicalConnected())
+                    ImGui::TextColored(ImVec4(0, 255, 0, 255), "真实手柄：已连接 / Physical controller: Connected");
+                else
+                    ImGui::TextColored(ImVec4(255, 0, 0, 255), "真实手柄：未连接 / Physical controller: Not connected");
+            }
+            else
+            {
+                ImGui::TextColored(ImVec4(255, 0, 0, 255), "手柄未初始化 / Gamepad not initialized");
+            }
+
+            ImGui::TextWrapped("提示：需要安装 ViGEmBus 驱动并将 ViGEmClient.dll 放入程序目录或 PATH。\nNote: Requires ViGEmBus driver and ViGEmClient.dll in PATH.");
         }
 
         OverlayUI::EndSection();

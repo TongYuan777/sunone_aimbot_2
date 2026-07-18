@@ -14,6 +14,7 @@
 #include <thread>
 
 #include "Arduino.h"
+#include "GamepadViGEm.h"
 #include "KmboxAConnection.h"
 #include "KmboxNetConnection.h"
 #include "Makcu.h"
@@ -505,6 +506,55 @@ public:
 private:
     std::unique_ptr<MakcuConnection> device_;
 };
+
+class GamepadViGEmMouseInput final : public IMouseInput
+{
+public:
+    GamepadViGEmMouseInput(int playerIndex,
+                           float stickScale,
+                           int deadzone,
+                           const std::string& aimButton,
+                           const std::string& shootButton,
+                           const std::string& zoomButton)
+        : device_(std::make_unique<GamepadViGEm>(
+              playerIndex, stickScale, deadzone, aimButton, shootButton, zoomButton))
+    {
+        device_->open();
+    }
+
+    const char* name() const override { return "GAMEPAD_VIGEM"; }
+    bool isOpen() const override { return device_ && device_->isOpen(); }
+    bool move(int dx, int dy) override
+    {
+        if (!isOpen())
+            return false;
+        return device_->move(dx, dy);
+    }
+    bool leftDown() override
+    {
+        if (!isOpen())
+            return false;
+        return device_->leftDown();
+    }
+    bool leftUp() override
+    {
+        if (!isOpen())
+            return false;
+        return device_->leftUp();
+    }
+    bool hasPhysicalButtonState() const override { return true; }
+    bool keyPressed(const std::string& keyName) override
+    {
+        return isOpen() && device_->isButtonPressed(keyName);
+    }
+    bool aimingActive() const override { return isOpen() && device_->aimingActive(); }
+    bool shootingActive() const override { return isOpen() && device_->shootingActive(); }
+    bool zoomingActive() const override { return isOpen() && device_->zoomingActive(); }
+    GamepadViGEm* gamepad() override { return device_.get(); }
+
+private:
+    std::unique_ptr<GamepadViGEm> device_;
+};
 }
 
 std::optional<MouseInputMethod> ParseMouseInputMethod(const std::string& method)
@@ -529,6 +579,8 @@ std::optional<MouseInputMethod> ParseMouseInputMethod(const std::string& method)
         return MouseInputMethod::KmboxA;
     if (method == "MAKCU")
         return MouseInputMethod::Makcu;
+    if (method == "GAMEPAD_VIGEM")
+        return MouseInputMethod::GamepadViGEm;
     return std::nullopt;
 }
 
@@ -545,6 +597,7 @@ std::string MouseInputMethodName(MouseInputMethod method)
     case MouseInputMethod::KmboxNet: return "KMBOX_NET";
     case MouseInputMethod::KmboxA: return "KMBOX_A";
     case MouseInputMethod::Makcu: return "MAKCU";
+    case MouseInputMethod::GamepadViGEm: return "GAMEPAD_VIGEM";
     case MouseInputMethod::Win32:
     default:
         return "WIN32";
@@ -580,6 +633,14 @@ std::unique_ptr<IMouseInput> CreateMouseInputDevice(const Config& config)
         return std::make_unique<KmboxAMouseInput>(config.kmbox_a_pidvid);
     case MouseInputMethod::Makcu:
         return std::make_unique<MakcuMouseInput>(config.makcu_port, static_cast<unsigned int>(config.makcu_baudrate));
+    case MouseInputMethod::GamepadViGEm:
+        return std::make_unique<GamepadViGEmMouseInput>(
+            config.gamepad_player_index,
+            config.gamepad_stick_scale,
+            config.gamepad_deadzone,
+            config.gamepad_aim_button,
+            config.gamepad_shoot_button,
+            config.gamepad_zoom_button);
     case MouseInputMethod::Win32:
     default:
         return std::make_unique<Win32MouseInput>();

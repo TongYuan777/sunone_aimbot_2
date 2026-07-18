@@ -1165,9 +1165,26 @@ void SetupImGui()
     fontConfig.OversampleH = 3;
     fontConfig.OversampleV = 2;
     fontConfig.PixelSnapH = true;
-    if (!io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\seguisb.ttf", 16.5f, &fontConfig) &&
-        !io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\SegUIVar.ttf", 16.5f, &fontConfig) &&
-        !io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\segoeui.ttf", 16.5f, &fontConfig))
+
+    // 中文显示所需的字形范围
+    const ImWchar* chineseGlyphRange = io.Fonts->GetGlyphRangesChineseSimplifiedCommon();
+
+    // 优先加载微软雅黑（支持中文），其次回退到 Segoe UI
+    if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.5f, &fontConfig, chineseGlyphRange))
+    {
+        // 微软雅黑加载成功
+    }
+    else if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttf", 16.5f, &fontConfig, chineseGlyphRange))
+    {
+        // 微软雅黑 ttf 加载成功
+    }
+    else if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\simhei.ttf", 16.5f, &fontConfig, chineseGlyphRange))
+    {
+        // 黑体回退
+    }
+    else if (!io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\seguisb.ttf", 16.5f, &fontConfig) &&
+             !io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\SegUIVar.ttf", 16.5f, &fontConfig) &&
+             !io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\segoeui.ttf", 16.5f, &fontConfig))
     {
         io.Fonts->AddFontDefault();
     }

@@ -59,6 +59,7 @@
     <ClCompile Include="mouse\Makcu.cpp" />
     <ClCompile Include="mouse\MouseInput.cpp" />
     <ClCompile Include="mouse\mouse.cpp" />
+    <ClCompile Include="mouse\GamepadViGEm.cpp" />
     <ClCompile Include="mouse\rzctl.cpp" />
     <ClCompile Include="mouse\Teensy41RawHid.cpp" />
     <ClCompile Include="mouse\Arduino.cpp" />
@@ -133,6 +134,7 @@
     <ClInclude Include="mouse\Makcu.h" />
     <ClInclude Include="mouse\MouseInput.h" />
     <ClInclude Include="mouse\mouse.h" />
+    <ClInclude Include="mouse\GamepadViGEm.h" />
     <ClInclude Include="mouse\rzctl.h" />
     <ClInclude Include="mouse\Teensy41RawHid.h" />
     <ClInclude Include="mouse\Arduino.h" />
@@ -242,7 +244,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <AdditionalDependencies>opencv_world4130.lib;nvinfer_10.lib;nvonnxparser_10.lib;WindowsApp.lib;d3d11.lib;dxgi.lib;dwmapi.lib;d2d1.lib;setupapi.lib;cuda.lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world4130.lib;nvinfer_10.lib;nvonnxparser_10.lib;WindowsApp.lib;d3d11.lib;dxgi.lib;dwmapi.lib;d2d1.lib;setupapi.lib;cuda.lib;cudart.lib;xinput9_1_0.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <CETCompat>true</CETCompat>
     </Link>
@@ -274,7 +276,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opencv_world4130.lib;WindowsApp.lib;d3d11.lib;dxgi.lib;dwmapi.lib;d2d1.lib;setupapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world4130.lib;WindowsApp.lib;d3d11.lib;dxgi.lib;dwmapi.lib;d2d1.lib;setupapi.lib;xinput9_1_0.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <GenerateCatalogFiles>false</GenerateCatalogFiles>

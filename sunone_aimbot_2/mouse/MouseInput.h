@@ -7,6 +7,7 @@
 
 class Arduino;
 class Config;
+class GamepadViGEm;
 class GhubMouse;
 class KmboxAConnection;
 class KmboxNetConnection;
@@ -26,7 +27,8 @@ enum class MouseInputMethod
     Teensy41Hid,
     KmboxNet,
     KmboxA,
-    Makcu
+    Makcu,
+    GamepadViGEm
 };
 
 std::optional<MouseInputMethod> ParseMouseInputMethod(const std::string& method);
@@ -56,6 +58,7 @@ public:
     virtual KmboxAConnection* kmboxA() { return nullptr; }
     virtual MakcuConnection* makcu() { return nullptr; }
     virtual Teensy41RawHid* teensy41RawHid() { return nullptr; }
+    virtual GamepadViGEm* gamepad() { return nullptr; }
 };
 
 std::unique_ptr<IMouseInput> CreateMouseInputDevice(const Config& config);

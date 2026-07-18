@@ -265,6 +265,7 @@ set(AIMBOT_SOURCES
     "${SRC_DIR}/mouse/Makcu.cpp"
     "${SRC_DIR}/mouse/MouseInput.cpp"
     "${SRC_DIR}/mouse/mouse.cpp"
+    "${SRC_DIR}/mouse/GamepadViGEm.cpp"
     "${SRC_DIR}/mouse/rzctl.cpp"
     "${SRC_DIR}/mouse/Teensy41RawHid.cpp"
     "${SRC_DIR}/mouse/Arduino.cpp"
@@ -447,6 +448,7 @@ target_link_libraries(ai PRIVATE
     d2d1
     setupapi
     WindowsApp
+    xinput9_1_0
 )
 
 if(NOT AIMBOT_USE_CUDA)
