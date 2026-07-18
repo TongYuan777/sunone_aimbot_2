@@ -323,6 +323,13 @@ add_library(serial_embedded STATIC
 target_include_directories(serial_embedded PUBLIC "${SRC_DIR}/modules/serial/include")
 target_link_libraries(serial_embedded PUBLIC setupapi)
 
+target_compile_definitions(serial_embedded PRIVATE
+    NOMINMAX
+    WIN32_LEAN_AND_MEAN
+    UNICODE
+    _UNICODE
+)
+
 if(MSVC)
     set_target_properties(serial_embedded PROPERTIES
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
@@ -372,6 +379,8 @@ target_compile_definitions(ai PRIVATE
     UNICODE
     _UNICODE
     _CONSOLE
+    NOMINMAX
+    WIN32_LEAN_AND_MEAN
     # C++/WinRT still includes the experimental coroutine header in C++17 mode.
     _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
 )
