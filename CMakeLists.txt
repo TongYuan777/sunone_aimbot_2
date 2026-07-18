@@ -395,6 +395,19 @@ if(MSVC)
         $<$<COMPILE_LANGUAGE:CXX>:/utf-8>
         /utf-8
     )
+
+    # Release 模式下的体积优化：优化大小 + 全程序优化 + 函数级链接
+    target_compile_options(ai PRIVATE
+        $<$<CONFIG:Release>:/Os>
+        $<$<CONFIG:Release>:/GL>
+        $<$<CONFIG:Release>:/Gw>
+    )
+
+    target_link_options(ai PRIVATE
+        $<$<CONFIG:Release>:/OPT:REF>
+        $<$<CONFIG:Release>:/OPT:ICF>
+        $<$<CONFIG:Release>:/LTCG>
+    )
 endif()
 
 if(AIMBOT_USE_CUDA)
