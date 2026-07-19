@@ -373,6 +373,107 @@ bool GamepadViGEm::isButtonPressed(const std::string& name) const
     return checkButton(name);
 }
 
+std::vector<int> GamepadViGEm::getConnectedGamepadIndices()
+{
+    std::vector<int> indices;
+    for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
+    {
+        XINPUT_STATE st{};
+        ZeroMemory(&st, sizeof(st));
+        if (XInputGetState(i, &st) == ERROR_SUCCESS)
+            indices.push_back(static_cast<int>(i));
+    }
+    return indices;
+}
+
+void GamepadViGEm::collectPressedButtonsLocked(std::vector<std::string>& out) const
+{
+    out.clear();
+
+    // 数字按键
+    if (buttons_ & GamepadButton::A)            out.emplace_back(GamepadButtonName::A());
+    if (buttons_ & GamepadButton::B)            out.emplace_back(GamepadButtonName::B());
+    if (buttons_ & GamepadButton::X)            out.emplace_back(GamepadButtonName::X());
+    if (buttons_ & GamepadButton::Y)            out.emplace_back(GamepadButtonName::Y());
+    if (buttons_ & GamepadButton::LEFT_SHOULDER)  out.emplace_back(GamepadButtonName::LEFT_SHOULDER());
+    if (buttons_ & GamepadButton::RIGHT_SHOULDER) out.emplace_back(GamepadButtonName::RIGHT_SHOULDER());
+    if (buttons_ & GamepadButton::LEFT_THUMB)   out.emplace_back(GamepadButtonName::LEFT_THUMB());
+    if (buttons_ & GamepadButton::RIGHT_THUMB)  out.emplace_back(GamepadButtonName::RIGHT_THUMB());
+    if (buttons_ & GamepadButton::START)        out.emplace_back(GamepadButtonName::START());
+    if (buttons_ & GamepadButton::BACK)         out.emplace_back(GamepadButtonName::BACK());
+    if (buttons_ & GamepadButton::DPAD_UP)      out.emplace_back(GamepadButtonName::DPAD_UP());
+    if (buttons_ & GamepadButton::DPAD_DOWN)    out.emplace_back(GamepadButtonName::DPAD_DOWN());
+    if (buttons_ & GamepadButton::DPAD_LEFT)    out.emplace_back(GamepadButtonName::DPAD_LEFT());
+    if (buttons_ & GamepadButton::DPAD_RIGHT)   out.emplace_back(GamepadButtonName::DPAD_RIGHT());
+
+    // 扳机（超过阈值视为按下）
+    const int triggerThreshold = XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
+    if (leftTrigger_ > triggerThreshold)  out.emplace_back(GamepadButtonName::LEFT_TRIGGER());
+    if (rightTrigger_ > triggerThreshold) out.emplace_back(GamepadButtonName::RIGHT_TRIGGER());
+}
+
+std::vector<std::string> GamepadViGEm::getCurrentlyPressedButtons() const
+{
+    std::lock_guard<std::mutex> lock(stateMutex_);
+    std::vector<std::string> result;
+    collectPressedButtonsLocked(result);
+    return result;
+}
+
+void GamepadViGEm::beginCapture()
+{
+    std::lock_guard<std::mutex> lock(captureMutex_);
+    capturedButton_.clear();
+    hasCaptured_ = false;
+    capturing_.store(true);
+}
+
+void GamepadViGEm::cancelCapture()
+{
+    std::lock_guard<std::mutex> lock(captureMutex_);
+    capturedButton_.clear();
+    hasCaptured_ = false;
+    capturing_.store(false);
+}
+
+bool GamepadViGEm::isCapturing() const
+{
+    return capturing_.load();
+}
+
+std::string GamepadViGEm::pollCapturedButton()
+{
+    std::lock_guard<std::mutex> lock(captureMutex_);
+    if (!hasCaptured_)
+        return std::string();
+
+    std::string result;
+    result.swap(capturedButton_);
+    capturedButton_.clear();
+    hasCaptured_ = false;
+    capturing_.store(false);
+    return result;
+}
+
+void GamepadViGEm::updateCaptureLocked()
+{
+    // 调用者已持 stateMutex_
+    if (!capturing_.load())
+        return;
+
+    // 先收集当前按下的按键（无锁访问 buttons_/triggers_，因为已持 stateMutex_）
+    std::vector<std::string> pressed;
+    collectPressedButtonsLocked(pressed);
+    if (pressed.empty())
+        return;
+
+    std::lock_guard<std::mutex> capLock(captureMutex_);
+    if (hasCaptured_)
+        return;
+    capturedButton_ = pressed.front();
+    hasCaptured_ = true;
+}
+
 bool GamepadViGEm::aimingActive() const
 {
     return aimingActive_.load();
@@ -413,6 +514,9 @@ void GamepadViGEm::pollingThreadFunc()
             aimingActive_.store(checkButton(aimButton_));
             shootingActive_.store(checkButton(shootButton_));
             zoomingActive_.store(checkButton(zoomButton_));
+
+            // 按键捕获：若处于捕获中，记录首个按下的按键
+            updateCaptureLocked();
         }
         else
         {

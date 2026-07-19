@@ -941,10 +941,40 @@ static void draw_mouse_page(MouseSettingsPage page)
         }
         else if (config.input_method == "GAMEPAD_VIGEM")
         {
-            // 玩家索引下拉框 (0-3)
-            std::vector<std::string> player_list = { "0", "1", "2", "3" };
+            // 获取当前活动的手柄实例（可能为空，例如配置已切换但设备尚未重建）
+            GamepadViGEm* gamepad = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(inputDevicesMutex);
+                gamepad = activeMouseInputOwner ? activeMouseInputOwner->gamepad() : nullptr;
+            }
+
+            // -------- 已连接手柄扫描（每 ~500ms 刷新一次） --------
+            // 用静态缓存避免每帧调用 XInputGetState（4 次系统调用）
+            static std::vector<int> s_connectedIndices;
+            static float s_scanAccumulator = 0.0f;
+            s_scanAccumulator += ImGui::GetIO().DeltaTime;
+            if (s_connectedIndices.empty() || s_scanAccumulator >= 0.5f)
+            {
+                s_scanAccumulator = 0.0f;
+                s_connectedIndices = GamepadViGEm::getConnectedGamepadIndices();
+            }
+
+            // 玩家索引下拉框：选项标注连接状态（如 "0 (已连接)" / "1 (未连接)"）
+            std::vector<std::string> player_labels;
+            player_labels.reserve(4);
+            for (int i = 0; i < 4; ++i)
+            {
+                bool isConnected = false;
+                for (int idx : s_connectedIndices)
+                {
+                    if (idx == i) { isConnected = true; break; }
+                }
+                player_labels.push_back(std::to_string(i) + (isConnected ? " (已连接)" : " (未连接)"));
+            }
             std::vector<const char*> player_items;
-            for (const auto& p : player_list) player_items.push_back(p.c_str());
+            player_items.reserve(player_labels.size());
+            for (const auto& lbl : player_labels) player_items.push_back(lbl.c_str());
+
             int player_idx = config.gamepad_player_index;
             if (player_idx < 0 || player_idx > 3) player_idx = 0;
             if (OverlayUI::ComboRow("玩家索引 / Player Index", &player_idx, player_items.data(), static_cast<int>(player_items.size())))
@@ -952,6 +982,22 @@ static void draw_mouse_page(MouseSettingsPage page)
                 config.gamepad_player_index = player_idx;
                 OverlayConfig_MarkDirty();
                 input_method_changed.store(true);
+            }
+
+            // 当前已连接手柄数量提示
+            if (s_connectedIndices.empty())
+            {
+                ImGui::TextColored(ImVec4(255, 108, 108, 255), "未检测到任何已连接的 XInput 手柄");
+            }
+            else
+            {
+                std::string idxStr = "已连接手柄索引：";
+                for (size_t i = 0; i < s_connectedIndices.size(); ++i)
+                {
+                    if (i) idxStr += ", ";
+                    idxStr += std::to_string(s_connectedIndices[i]);
+                }
+                ImGui::TextColored(ImVec4(108, 255, 108, 255), "%s", idxStr.c_str());
             }
 
             // 摇杆灵敏度
@@ -970,9 +1016,43 @@ static void draw_mouse_page(MouseSettingsPage page)
                 OverlayConfig_MarkDirty();
             }
 
-            // 手柄按键下拉框辅助函数
-            auto drawButtonCombo = [&](const char* label, std::string& configField)
+            // -------- 实时按键显示 --------
+            if (gamepad && gamepad->isPhysicalConnected())
             {
+                auto pressed = gamepad->getCurrentlyPressedButtons();
+                std::string pressedStr;
+                for (size_t i = 0; i < pressed.size(); ++i)
+                {
+                    if (i) pressedStr += ", ";
+                    pressedStr += pressed[i];
+                }
+                if (pressedStr.empty())
+                    ImGui::TextDisabled("当前按下 / Pressed: (无)");
+                else
+                    ImGui::TextColored(ImVec4(108, 255, 108, 255), "当前按下 / Pressed: %s", pressedStr.c_str());
+            }
+            else
+            {
+                ImGui::TextDisabled("当前按下 / Pressed: (手柄未连接)");
+            }
+
+            // -------- 按键映射 + 捕获按钮 --------
+            // 静态变量记录当前在捕获哪个字段（"aim"/"shoot"/"zoom" 或空）
+            // 避免 pollCapturedButton() 被多个字段调用导致结果被偷走
+            static std::string s_capturingField;
+
+            // 清理残留捕获标记：gamepad 失效，或 gamepad 存在但已不在捕获状态
+            // （例如切换输入方式后 gamepan 实例重建，isCapturing() 会归零）
+            if (!s_capturingField.empty())
+            {
+                if (!gamepad || !gamepad->isCapturing())
+                    s_capturingField.clear();
+            }
+
+            auto drawButtonComboWithCapture = [&](const char* label, std::string& configField, const char* fieldId)
+            {
+                const auto row = OverlayUI::BeginSettingRow(label);
+
                 auto buttons = GamepadButtonName::All();
                 std::vector<const char*> btn_items;
                 btn_items.reserve(buttons.size());
@@ -982,22 +1062,78 @@ static void draw_mouse_page(MouseSettingsPage page)
                 {
                     if (buttons[i] == configField) { idx = static_cast<int>(i); break; }
                 }
-                if (OverlayUI::ComboRow(label, &idx, btn_items.data(), static_cast<int>(btn_items.size())))
+
+                const ImGuiStyle& style = ImGui::GetStyle();
+                const float buttonW = 96.0f;
+                const float comboW = std::max(40.0f, row.controlWidth - buttonW - style.ItemSpacing.x);
+
+                ImGui::SetNextItemWidth(comboW);
+                ImGui::Combo("##combo", &idx, btn_items.data(), static_cast<int>(btn_items.size()));
+                ImGui::SameLine();
+
+                const bool canCapture = gamepad && gamepad->isPhysicalConnected();
+                const bool thisCapturing = canCapture && gamepad->isCapturing() && s_capturingField == fieldId;
+                const bool otherCapturing = !s_capturingField.empty() && s_capturingField != fieldId;
+
+                // 其他字段正在捕获时，禁用本字段的捕获按钮
+                if (!canCapture || otherCapturing)
+                    ImGui::BeginDisabled();
+
+                const char* btnLabel = thisCapturing ? "停止##capture" : "捕获##capture";
+                if (ImGui::Button(btnLabel, ImVec2(buttonW, 0.0f)))
+                {
+                    if (gamepad)
+                    {
+                        if (thisCapturing)
+                        {
+                            gamepad->cancelCapture();
+                            s_capturingField.clear();
+                        }
+                        else
+                        {
+                            gamepad->beginCapture();
+                            s_capturingField = fieldId;
+                        }
+                    }
+                }
+
+                if (!canCapture || otherCapturing)
+                    ImGui::EndDisabled();
+
+                OverlayUI::EndSettingRow(row);
+
+                // 应用下拉框选择
+                if (buttons[idx] != configField)
                 {
                     configField = buttons[idx];
                     OverlayConfig_MarkDirty();
                     input_method_changed.store(true);
                 }
+
+                // 只有当前捕获的字段才取走结果
+                if (gamepad && thisCapturing)
+                {
+                    std::string captured = gamepad->pollCapturedButton();
+                    if (!captured.empty())
+                    {
+                        if (captured != configField)
+                        {
+                            configField = captured;
+                            OverlayConfig_MarkDirty();
+                            input_method_changed.store(true);
+                        }
+                        s_capturingField.clear();
+                    }
+                }
             };
 
-            drawButtonCombo("自瞄按键 / Aim Button", config.gamepad_aim_button);
-            drawButtonCombo("射击按键 / Shoot Button", config.gamepad_shoot_button);
-            drawButtonCombo("缩放按键 / Zoom Button", config.gamepad_zoom_button);
+            drawButtonComboWithCapture("自瞄按键 / Aim Button", config.gamepad_aim_button, "aim");
+            drawButtonComboWithCapture("射击按键 / Shoot Button", config.gamepad_shoot_button, "shoot");
+            drawButtonComboWithCapture("缩放按键 / Zoom Button", config.gamepad_zoom_button, "zoom");
 
-            // 连接状态
-            if (activeMouseInputOwner && activeMouseInputOwner->gamepad())
+            // -------- 连接状态 --------
+            if (gamepad)
             {
-                GamepadViGEm* gamepad = activeMouseInputOwner->gamepad();
                 if (gamepad->isVirtualConnected())
                     ImGui::TextColored(ImVec4(0, 255, 0, 255), "虚拟手柄：已连接 / Virtual controller: Connected");
                 else
@@ -1014,6 +1150,7 @@ static void draw_mouse_page(MouseSettingsPage page)
             }
 
             ImGui::TextWrapped("提示：需要安装 ViGEmBus 驱动并将 ViGEmClient.dll 放入程序目录或 PATH。\nNote: Requires ViGEmBus driver and ViGEmClient.dll in PATH.");
+            ImGui::TextWrapped("点击 \"捕获\" 后按下任意手柄按键即可自动填入对应字段。");
         }
 
         OverlayUI::EndSection();
