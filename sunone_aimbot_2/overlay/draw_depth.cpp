@@ -61,14 +61,14 @@ static const char* kDepthColormapNames[] = {
 void draw_depth()
 {
 #ifndef USE_CUDA
-    if (OverlayUI::BeginSection("Depth", "depth_section_unavailable"))
+    if (OverlayUI::BeginSection("深度", "depth_section_unavailable"))
     {
-        ImGui::TextUnformatted("Depth requires a CUDA build.");
+        ImGui::TextUnformatted("深度功能需要 CUDA 版本。");
         OverlayUI::EndSection();
     }
     return;
 #else
-    static std::string depthStatus = "Depth runtime is managed automatically.";
+    static std::string depthStatus = "深度运行时由系统自动管理。";
     static std::atomic<bool> depthExportRunning{ false };
     static std::thread depthExportThread;
     static std::mutex depthExportMutex;
@@ -100,22 +100,22 @@ void draw_depth()
     std::string selectedModel;
     bool hasModels = !availableDepthModels.empty();
 
-    if (OverlayUI::BeginSection("Depth Inference", "depth_section_inference"))
+    if (OverlayUI::BeginSection("深度推理", "depth_section_inference"))
     {
         {
-            const auto row = OverlayUI::BeginSettingRow("Enable Depth Inference");
+            const auto row = OverlayUI::BeginSettingRow("启用深度推理");
             if (ImGui::Checkbox("##enable_depth_inference", &config.depth_inference_enabled))
             {
                 OverlayConfig_MarkDirty();
                 if (!config.depth_inference_enabled)
-                    depthStatus = "Depth inference disabled.";
+                    depthStatus = "深度推理已禁用。";
             }
             OverlayUI::EndSettingRow(row);
         }
 
         if (!hasModels)
         {
-            OverlayUI::TextRow("No depth models available in 'depth_models'.", IM_COL32(255, 108, 108, 255));
+            OverlayUI::TextRow("'depth_models' 中没有可用深度模型。", IM_COL32(255, 108, 108, 255));
         }
         else
         {
@@ -138,7 +138,7 @@ void draw_depth()
                 modelItems.push_back(modelName.c_str());
             }
 
-            const auto row = OverlayUI::BeginSettingRow("Depth model");
+            const auto row = OverlayUI::BeginSettingRow("深度模型");
             if (ImGui::Combo("##depth_model", &currentModelIndex, modelItems.data(), static_cast<int>(modelItems.size())))
             {
                 if (config.depth_model_path != availableDepthModels[currentModelIndex])
@@ -159,18 +159,18 @@ void draw_depth()
             ImGui::BeginDisabled();
         }
         {
-            const auto row = OverlayUI::BeginSettingRow("Load depth model");
-            if (ImGui::Button("Load", ImVec2(row.controlWidth, 0.0f)))
+            const auto row = OverlayUI::BeginSettingRow("加载深度模型");
+            if (ImGui::Button("加载", ImVec2(row.controlWidth, 0.0f)))
             {
                 if (config.depth_model_path != selectedModel)
                 {
                     config.depth_model_path = selectedModel;
                     OverlayConfig_MarkDirty();
-                    depthStatus = "Depth model path applied. Runtime loader will update automatically.";
+                    depthStatus = "深度模型路径已应用。运行时将自动更新加载。";
                 }
                 else
                 {
-                    depthStatus = "Depth model path already selected.";
+                    depthStatus = "深度模型路径已选中。";
                 }
             }
             OverlayUI::EndSettingRow(row);
@@ -185,8 +185,8 @@ void draw_depth()
             ImGui::BeginDisabled();
         }
         {
-            const auto row = OverlayUI::BeginSettingRow("Export depth engine");
-            if (ImGui::Button("Export", ImVec2(row.controlWidth, 0.0f)))
+            const auto row = OverlayUI::BeginSettingRow("导出深度引擎");
+            if (ImGui::Button("导出", ImVec2(row.controlWidth, 0.0f)))
             {
                 if (!depthExportRunning.load())
                 {
@@ -199,16 +199,16 @@ void draw_depth()
                     std::string exportPath = selectedModel;
                     if (exportPath.empty())
                     {
-                        depthStatus = "Set a depth ONNX path to export.";
+                        depthStatus = "请设置要导出的深度 ONNX 路径。";
                     }
                     else if (!OtherTools::HasExtensionCaseInsensitive(exportPath, ".onnx"))
                     {
-                        depthStatus = "Export expects an .onnx depth model path.";
+                        depthStatus = "导出需要 .onnx 深度模型路径。";
                     }
                     else
                     {
                         depthExportRunning.store(true);
-                        depthStatus = "Depth engine export started...";
+                        depthStatus = "深度引擎导出已开始...";
                         depthExportThread = std::thread([exportPath] {
                             depth_anything::DepthAnythingTrt exporter;
                             std::string result;
@@ -219,13 +219,13 @@ void draw_depth()
                                 if (exporter.exportEngine(exportPath, gLogger, &enginePath))
                                 {
                                     exportedModel = std::filesystem::path(enginePath).filename().string();
-                                    result = "Depth engine exported: " + exportedModel;
+                                    result = "深度引擎已导出：" + exportedModel;
                                 }
                                 else
                                 {
                                     if (gTrtExportCancelRequested.load())
                                     {
-                                        result = "Depth export canceled.";
+                                        result = "深度导出已取消。";
                                     }
                                     else
                                     {
@@ -235,12 +235,12 @@ void draw_depth()
                             }
                             catch (const std::exception& e)
                             {
-                                result = std::string("Depth export failed: ") + e.what();
+                                result = std::string("深度导出失败：") + e.what();
                                 exportedModel.clear();
                             }
                             catch (...)
                             {
-                                result = "Depth export failed with an unknown error.";
+                                result = "深度导出失败，发生未知错误。";
                                 exportedModel.clear();
                             }
                             {
@@ -264,19 +264,19 @@ void draw_depth()
         {
             OverlayExportUI::DrawTensorRtExportPanel(
                 "depth_tensor_rt_export",
-                "Depth engine export",
-                "Compiling optimized depth inference engine",
+                "深度引擎导出",
+                "正在编译优化后的深度推理引擎",
                 selectedModel.c_str(),
-                "Cancel depth export");
+                "取消深度导出");
         }
 
         OverlayUI::EndSection();
     }
 
-    if (OverlayUI::BeginSection("Depth Runtime", "depth_section_runtime"))
+    if (OverlayUI::BeginSection("深度运行时", "depth_section_runtime"))
     {
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth FPS");
+            const auto row = OverlayUI::BeginSettingRow("深度 FPS");
             if (ImGui::SliderInt("##depth_fps", &config.depth_fps, 0, 120))
             {
                 OverlayConfig_MarkDirty();
@@ -285,7 +285,7 @@ void draw_depth()
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth Mask FPS");
+            const auto row = OverlayUI::BeginSettingRow("深度遮罩 FPS");
             if (ImGui::SliderInt("##depth_mask_fps", &config.depth_mask_fps, 1, 30))
             {
                 OverlayConfig_MarkDirty();
@@ -295,10 +295,10 @@ void draw_depth()
         OverlayUI::EndSection();
     }
 
-    if (OverlayUI::BeginSection("Depth Mask", "depth_section_mask"))
+    if (OverlayUI::BeginSection("深度遮罩", "depth_section_mask"))
     {
         {
-            const auto row = OverlayUI::BeginSettingRow("Enable Depth Mask");
+            const auto row = OverlayUI::BeginSettingRow("启用深度遮罩");
             if (ImGui::Checkbox("##enable_depth_mask", &config.depth_mask_enabled))
             {
                 OverlayConfig_MarkDirty();
@@ -307,7 +307,7 @@ void draw_depth()
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth Mask Near %");
+            const auto row = OverlayUI::BeginSettingRow("深度遮罩近处 %");
             if (ImGui::SliderInt("##depth_mask_near_percent", &config.depth_mask_near_percent, 1, 100))
             {
                 OverlayConfig_MarkDirty();
@@ -316,7 +316,7 @@ void draw_depth()
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth Mask Expand (px)");
+            const auto row = OverlayUI::BeginSettingRow("深度遮罩扩展（像素）");
             if (ImGui::SliderInt("##depth_mask_expand", &config.depth_mask_expand, 0, 128))
             {
                 OverlayConfig_MarkDirty();
@@ -325,7 +325,7 @@ void draw_depth()
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth Mask Hold Frames");
+            const auto row = OverlayUI::BeginSettingRow("深度遮罩保持帧数");
             if (ImGui::SliderInt("##depth_mask_hold_frames", &config.depth_mask_hold_frames, 0, 120))
             {
                 OverlayConfig_MarkDirty();
@@ -334,7 +334,7 @@ void draw_depth()
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth Mask Alpha");
+            const auto row = OverlayUI::BeginSettingRow("深度遮罩不透明度");
             if (ImGui::SliderInt("##depth_mask_alpha", &config.depth_mask_alpha, 0, 255))
             {
                 OverlayConfig_MarkDirty();
@@ -343,11 +343,11 @@ void draw_depth()
         }
         if (config.depth_mask_enabled && config.depth_mask_alpha == 0)
         {
-            OverlayUI::TextRow("Depth mask is invisible: alpha is 0.", IM_COL32(255, 108, 108, 255));
+            OverlayUI::TextRow("深度遮罩不可见：不透明度为 0。", IM_COL32(255, 108, 108, 255));
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth Mask Invert");
+            const auto row = OverlayUI::BeginSettingRow("深度遮罩反转");
             if (ImGui::Checkbox("##depth_mask_invert", &config.depth_mask_invert))
             {
                 OverlayConfig_MarkDirty();
@@ -356,7 +356,7 @@ void draw_depth()
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth Debug Overlay (Game)");
+            const auto row = OverlayUI::BeginSettingRow("深度调试叠加（游戏）");
             if (ImGui::Checkbox("##depth_debug_overlay_game", &config.depth_debug_overlay_enabled))
             {
                 OverlayConfig_MarkDirty();
@@ -366,7 +366,7 @@ void draw_depth()
 
         int colormapIndex = config.depth_colormap;
         {
-            const auto row = OverlayUI::BeginSettingRow("Depth colormap");
+            const auto row = OverlayUI::BeginSettingRow("深度色图");
             if (ImGui::Combo("##depth_colormap", &colormapIndex, kDepthColormapNames, IM_ARRAYSIZE(kDepthColormapNames)))
             {
                 config.depth_colormap = colormapIndex;
@@ -378,9 +378,9 @@ void draw_depth()
         OverlayUI::EndSection();
     }
 
-    if (OverlayUI::BeginSection("Depth Status", "depth_section_status"))
+    if (OverlayUI::BeginSection("深度状态", "depth_section_status"))
     {
-        ImGui::Text("Status: %s", depthStatus.c_str());
+        ImGui::Text("状态：%s", depthStatus.c_str());
 
         if (config.depth_inference_enabled && config.depth_mask_enabled)
         {
@@ -390,27 +390,27 @@ void draw_depth()
             const auto frameSize = depthMask.lastFrameSize();
 
             ImGui::Separator();
-            ImGui::Text("Mask runtime: %s", state.model_ready ? "ready" : "not ready");
-            ImGui::Text("Mask model path: %s",
-                state.last_model_path.empty() ? "(none)" : state.last_model_path.c_str());
+            ImGui::Text("遮罩运行时：%s", state.model_ready ? "ready" : "not ready");
+            ImGui::Text("遮罩模型路径：%s",
+                state.last_model_path.empty() ? "（无）" : state.last_model_path.c_str());
             if (frameSize.first > 0 && frameSize.second > 0)
-                ImGui::Text("Last mask frame: %dx%d", frameSize.first, frameSize.second);
+                ImGui::Text("上一帧遮罩：%dx%d", frameSize.first, frameSize.second);
 
             if (!lastErr.empty())
-                ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Mask error: %s", lastErr.c_str());
+                ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "遮罩错误：%s", lastErr.c_str());
         }
         else if (config.depth_inference_enabled)
         {
             ImGui::Separator();
-            ImGui::TextUnformatted("Depth mask is disabled.");
+            ImGui::TextUnformatted("深度遮罩已禁用。");
         }
         else
         {
             ImGui::Separator();
-            ImGui::TextUnformatted("Depth inference is disabled.");
+            ImGui::TextUnformatted("深度推理已禁用。");
         }
 
-        ImGui::TextUnformatted("Depth preview appears in game overlay when debug overlay is enabled.");
+        ImGui::TextUnformatted("启用调试叠加后，深度预览将显示在游戏画面中。");
         OverlayUI::EndSection();
     }
 #endif

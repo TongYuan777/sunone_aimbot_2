@@ -85,7 +85,7 @@ static bool drawScreenshotButtonRows()
 {
     if (key_names_cstrs.empty())
     {
-        ImGui::TextDisabled("No key list available.");
+        ImGui::TextDisabled("无可用按键列表。");
         return false;
     }
 
@@ -101,8 +101,8 @@ static bool drawScreenshotButtonRows()
         std::string& currentKeyName = config.screenshot_button[i];
         int currentIndex = findDebugKeyIndexByName(currentKeyName);
         const std::string rowLabel = (config.screenshot_button.size() > 1)
-            ? "Screenshot " + std::to_string(i + 1)
-            : "Screenshot";
+            ? "截图 " + std::to_string(i + 1)
+            : "截图";
 
         ImGui::PushID(static_cast<int>(i));
 
@@ -246,54 +246,54 @@ static bool drawDataCollectionSection()
     syncDebugTextBuffer(g_collectClassFilterBuffer, sizeof(g_collectClassFilterBuffer), g_collectClassFilterMirror, config.auto_label_record_classes);
 
     bool changed = false;
-    if (!OverlayUI::BeginSection("Data Collection", "debug_section_data_collection"))
+    if (!OverlayUI::BeginSection("数据采集", "debug_section_data_collection"))
         return false;
 
-    changed |= OverlayUI::CheckboxRow("Collect data while playing", &config.collect_data_while_playing);
-    changed |= OverlayUI::CheckboxRow("Only when aimbot is active", &config.collect_only_when_aimbot_running);
-    changed |= OverlayUI::CheckboxRow("Only when targets exist", &config.collect_only_when_targets_present);
+    changed |= OverlayUI::CheckboxRow("运行时采集数据", &config.collect_data_while_playing);
+    changed |= OverlayUI::CheckboxRow("仅自瞄激活时", &config.collect_only_when_aimbot_running);
+    changed |= OverlayUI::CheckboxRow("仅存在目标时", &config.collect_only_when_targets_present);
 
     int saveEveryNFrames = config.collect_save_every_n_frames;
-    if (OverlayUI::SliderIntRow("Save every N frames", &saveEveryNFrames, 1, 120))
+    if (OverlayUI::SliderIntRow("每 N 帧保存", &saveEveryNFrames, 1, 120))
     {
         config.collect_save_every_n_frames = saveEveryNFrames;
         changed = true;
     }
 
     int jpegQuality = config.collect_jpeg_quality;
-    if (OverlayUI::SliderIntRow("JPEG quality", &jpegQuality, 50, 100))
+    if (OverlayUI::SliderIntRow("JPEG 质量", &jpegQuality, 50, 100))
     {
         config.collect_jpeg_quality = jpegQuality;
         changed = true;
     }
 
-    if (OverlayUI::InputTextRow("Output folder", g_collectOutputDirBuffer, sizeof(g_collectOutputDirBuffer)))
+    if (OverlayUI::InputTextRow("输出文件夹", g_collectOutputDirBuffer, sizeof(g_collectOutputDirBuffer)))
         changed |= applyDebugTextBuffer(config.collect_output_dir, g_collectOutputDirMirror, g_collectOutputDirBuffer);
 
-    if (OverlayUI::BeginSubsection("Auto Label"))
+    if (OverlayUI::BeginSubsection("自动标注"))
     {
-        changed |= OverlayUI::CheckboxRow("Write YOLO txt labels", &config.auto_label_data);
+        changed |= OverlayUI::CheckboxRow("写入 YOLO txt 标签", &config.auto_label_data);
 
         ImGui::BeginDisabled(!config.auto_label_data);
 
         float minConf = config.auto_label_min_conf;
-        if (OverlayUI::SliderFloatRow("Min confidence", &minConf, 0.01f, 0.99f, "%.2f"))
+        if (OverlayUI::SliderFloatRow("最低置信度", &minConf, 0.01f, 0.99f, "%.2f"))
         {
             config.auto_label_min_conf = minConf;
             changed = true;
         }
 
         int maxBoxes = config.auto_label_max_boxes;
-        if (OverlayUI::SliderIntRow("Max boxes per file", &maxBoxes, 1, 100))
+        if (OverlayUI::SliderIntRow("每文件最大框数", &maxBoxes, 1, 100))
         {
             config.auto_label_max_boxes = maxBoxes;
             changed = true;
         }
 
-        if (OverlayUI::InputTextRow("Class filter", g_collectClassFilterBuffer, sizeof(g_collectClassFilterBuffer)))
+        if (OverlayUI::InputTextRow("类别筛选", g_collectClassFilterBuffer, sizeof(g_collectClassFilterBuffer)))
             changed |= applyDebugTextBuffer(config.auto_label_record_classes, g_collectClassFilterMirror, g_collectClassFilterBuffer);
 
-        ImGui::TextDisabled("Leave class filter empty to record all classes. Use comma-separated ids like 0,1.");
+        ImGui::TextDisabled("留空以记录所有类别。使用逗号分隔的 ID，如 0,1。");
         ImGui::EndDisabled();
 
         OverlayUI::EndSubsection();
@@ -301,20 +301,20 @@ static bool drawDataCollectionSection()
 
     const cvm::DataCollectionUiState ui = cvm::GetDataCollectionUiState("", config.ai_model.c_str(), config);
     ImGui::Separator();
-    ImGui::Text("Observed frames: %llu", static_cast<unsigned long long>(ui.observed_frame_count));
-    ImGui::Text("Save attempts: %llu", static_cast<unsigned long long>(ui.attempted_sample_count));
-    ImGui::Text("Images saved: %llu", static_cast<unsigned long long>(ui.saved_image_count));
-    ImGui::Text("Label files: %llu", static_cast<unsigned long long>(ui.saved_label_count));
-    ImGui::TextWrapped("Resolved folder: %s", ui.resolved_output_dir.c_str());
+    ImGui::Text("已观测帧：%llu", static_cast<unsigned long long>(ui.observed_frame_count));
+    ImGui::Text("保存尝试：%llu", static_cast<unsigned long long>(ui.attempted_sample_count));
+    ImGui::Text("已保存图片：%llu", static_cast<unsigned long long>(ui.saved_image_count));
+    ImGui::Text("标签文件：%llu", static_cast<unsigned long long>(ui.saved_label_count));
+    ImGui::TextWrapped("解析目录：%s", ui.resolved_output_dir.c_str());
     if (!ui.status.empty())
-        ImGui::TextWrapped("Status: %s", ui.status.c_str());
+        ImGui::TextWrapped("状态：%s", ui.status.c_str());
     else
-        ImGui::TextDisabled("Status: idle");
+        ImGui::TextDisabled("状态：空闲");
 
-    if (OverlayUI::ButtonRow("Resolved folder", "Copy path", "copy_resolved_path"))
+    if (OverlayUI::ButtonRow("解析目录", "复制路径", "copy_resolved_path"))
         ImGui::SetClipboardText(ui.resolved_output_dir.c_str());
 
-    if (OverlayUI::ButtonRow("Collect counters", "Reset counters", "reset_collect_counters"))
+    if (OverlayUI::ButtonRow("采集计数器", "重置计数", "reset_collect_counters"))
         cvm::ResetDataCollectionRuntime();
 
     OverlayUI::EndSection();
@@ -335,7 +335,7 @@ void draw_debug_frame()
     if (!g_debugSRV) return;
 
     {
-        const auto row = OverlayUI::BeginSettingRow("Debug scale");
+        const auto row = OverlayUI::BeginSettingRow("调试缩放");
         ImGui::SliderFloat("##value", &debug_scale, 0.1f, 2.0f, "%.1fx");
         OverlayUI::EndSettingRow(row);
     }
@@ -437,10 +437,10 @@ void draw_debug_frame()
 
 void draw_capture_preview()
 {
-    if (OverlayUI::BeginSection("Capture Preview", "capture_section_preview"))
+    if (OverlayUI::BeginSection("采集预览", "capture_section_preview"))
     {
         {
-            const auto row = OverlayUI::BeginSettingRow("Show Preview Window");
+            const auto row = OverlayUI::BeginSettingRow("显示预览窗口");
             if (ImGui::Checkbox("##value", &config.show_window))
             {
                 OverlayConfig_MarkDirty();
@@ -461,20 +461,20 @@ void draw_debug()
 {
     bool changed = false;
 
-    if (OverlayUI::BeginSection("Screenshot Buttons", "debug_section_screenshot_buttons"))
+    if (OverlayUI::BeginSection("截图按键", "debug_section_screenshot_buttons"))
     {
         if (drawScreenshotButtonRows())
             changed = true;
 
-        if (OverlayUI::InputIntRow("Screenshot delay", &config.screenshot_delay, 50, 500))
+        if (OverlayUI::InputIntRow("截图延迟", &config.screenshot_delay, 50, 500))
             changed = true;
-        if (OverlayUI::CheckboxRow("Verbose console output", &config.verbose))
+        if (OverlayUI::CheckboxRow("详细控制台输出", &config.verbose))
             changed = true;
 
         if (config.screenshot_delay < 0)
             config.screenshot_delay = 0;
 
-        if (OverlayUI::ButtonRow("OpenCV", "Print build information", "button_cv2_build_info"))
+        if (OverlayUI::ButtonRow("OpenCV", "打印构建信息", "button_cv2_build_info"))
         {
             std::cout << cv::getBuildInformation() << std::endl;
         }

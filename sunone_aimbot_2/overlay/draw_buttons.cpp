@@ -28,7 +28,7 @@ bool drawButtonBindingRows(const char* rowLabel, std::vector<std::string>& bindi
 {
     if (key_names_cstrs.empty())
     {
-        ImGui::TextDisabled("No key list available.");
+        ImGui::TextDisabled("无可用按键列表。");
         return false;
     }
 
@@ -106,17 +106,17 @@ void drawBindingRowsAndMarkDirty(const char* rowLabel, std::vector<std::string>&
 
 void draw_buttons()
 {
-    if (OverlayUI::BeginSection("Hotkeys", "buttons_section_hotkeys"))
+    if (OverlayUI::BeginSection("热键", "buttons_section_hotkeys"))
     {
-        drawBindingRowsAndMarkDirty("Targeting", config.button_targeting);
-        drawBindingRowsAndMarkDirty("Shoot", config.button_shoot);
-        drawBindingRowsAndMarkDirty("Zoom", config.button_zoom);
-        drawBindingRowsAndMarkDirty("Exit", config.button_exit);
-        drawBindingRowsAndMarkDirty("Pause", config.button_pause);
-        drawBindingRowsAndMarkDirty("Reload Config", config.button_reload_config);
-        drawBindingRowsAndMarkDirty("Open Overlay", config.button_open_overlay);
+        drawBindingRowsAndMarkDirty("瞄准", config.button_targeting);
+        drawBindingRowsAndMarkDirty("射击", config.button_shoot);
+        drawBindingRowsAndMarkDirty("缩放", config.button_zoom);
+        drawBindingRowsAndMarkDirty("退出", config.button_exit);
+        drawBindingRowsAndMarkDirty("暂停", config.button_pause);
+        drawBindingRowsAndMarkDirty("重载配置", config.button_reload_config);
+        drawBindingRowsAndMarkDirty("打开悬浮窗", config.button_open_overlay);
 
-        const auto row = OverlayUI::BeginSettingRow("Arrow Key Options");
+        const auto row = OverlayUI::BeginSettingRow("方向键选项");
         if (ImGui::Checkbox("##value", &config.enable_arrows_settings))
             OverlayConfig_MarkDirty();
         OverlayUI::EndSettingRow(row);

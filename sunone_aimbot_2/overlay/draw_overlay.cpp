@@ -14,10 +14,10 @@ void draw_overlay()
 {
     constexpr int kMinReadableOpacity = 252;
 
-    if (OverlayUI::BeginSection("Visual", "overlay_section_visual"))
+    if (OverlayUI::BeginSection("外观", "overlay_section_visual"))
     {
         {
-            const auto row = OverlayUI::BeginSettingRow("Overlay Opacity");
+            const auto row = OverlayUI::BeginSettingRow("叠加层不透明度");
             int prev_opacity = config.overlay_opacity;
             if (ImGui::SliderInt("##overlay_opacity_slider", &config.overlay_opacity, kMinReadableOpacity, 255))
             {
@@ -37,7 +37,7 @@ void draw_overlay()
             config.overlay_ui_scale = ui_scale;
 
         {
-            const auto row = OverlayUI::BeginSettingRow("UI Fine Scale");
+            const auto row = OverlayUI::BeginSettingRow("界面缩放");
             if (ImGui::SliderFloat("##overlay_ui_scale_slider", &ui_scale, 0.85f, 1.35f, "%.2f"))
             {
                 config.overlay_ui_scale = ui_scale;
@@ -47,7 +47,7 @@ void draw_overlay()
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Hide Overlays From Recording");
+            const auto row = OverlayUI::BeginSettingRow("采集时隐藏叠加层");
             if (ImGui::Checkbox("##hide_overlay_from_recording", &config.overlay_exclude_from_capture))
             {
                 Overlay_ApplyCaptureExclusion();

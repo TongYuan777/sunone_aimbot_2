@@ -34,24 +34,24 @@ bool prev_tracker_overlay_table_enabled = config.tracker_overlay_table_enabled;
 
 void draw_target()
 {
-    if (OverlayUI::BeginSection("Targeting", "target_section_targeting"))
+    if (OverlayUI::BeginSection("目标瞄准", "target_section_targeting"))
     {
-        OverlayUI::CheckboxRow("Disable Headshot", &config.disable_headshot);
-        OverlayUI::CheckboxRow("Auto Aim", &config.auto_aim);
+        OverlayUI::CheckboxRow("禁用爆头", &config.disable_headshot);
+        OverlayUI::CheckboxRow("自动瞄准", &config.auto_aim);
         OverlayUI::EndSection();
     }
 
-    if (OverlayUI::BeginSection("Offsets", "target_section_offsets"))
+    if (OverlayUI::BeginSection("偏移", "target_section_offsets"))
     {
-        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Arrow keys: Adjust body offset");
-        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Shift+Arrow keys: Adjust head offset");
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "方向键：调整身体偏移");
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Shift+方向键：调整头部偏移");
 
-        OverlayUI::SliderFloatRow("Approximate Body Y Offset", &config.body_y_offset, 0.0f, 1.0f, "%.2f");
-        OverlayUI::SliderFloatRow("Approximate Head Y Offset", &config.head_y_offset, 0.0f, 1.0f, "%.2f");
+        OverlayUI::SliderFloatRow("身体 Y 偏移", &config.body_y_offset, 0.0f, 1.0f, "%.2f");
+        OverlayUI::SliderFloatRow("头部 Y 偏移", &config.head_y_offset, 0.0f, 1.0f, "%.2f");
         OverlayUI::EndSection();
     }
 
-    if (OverlayUI::BeginSection("Preview", "target_section_preview"))
+    if (OverlayUI::BeginSection("预览", "target_section_preview"))
     {
         if (bodyTexture)
         {
@@ -76,14 +76,14 @@ void draw_target()
             ImVec2 head_line_end = ImVec2(image_pos.x + image_size.x, head_line_y);
             draw_list->AddLine(head_line_start, head_line_end, IM_COL32(0, 255, 0, 255), 2.0f);
 
-            draw_list->AddText(ImVec2(body_line_end.x + 5, body_line_y - 7), IM_COL32(255, 0, 0, 255), "Body");
-            draw_list->AddText(ImVec2(head_line_end.x + 5, head_line_y - 7), IM_COL32(0, 255, 0, 255), "Head");
+            draw_list->AddText(ImVec2(body_line_end.x + 5, body_line_y - 7), IM_COL32(255, 0, 0, 255), "身体");
+            draw_list->AddText(ImVec2(head_line_end.x + 5, head_line_y - 7), IM_COL32(0, 255, 0, 255), "头部");
         }
         else
         {
-            ImGui::Text("Image not found!");
+            ImGui::Text("图片未找到！");
         }
-        ImGui::Text("Note: There is a different value for each game, as the sizes of the player models may vary.");
+        ImGui::Text("注意：不同游戏的数值可能不同，因为玩家模型大小会有差异。");
         OverlayUI::EndSection();
     }
 
@@ -115,32 +115,32 @@ void draw_tracker()
         lockedTrackId = g_trackerLockedId;
     }
 
-    if (OverlayUI::BeginSection("Status", "tracker_section_status"))
+    if (OverlayUI::BeginSection("状态", "tracker_section_status"))
     {
-        changed |= OverlayUI::CheckboxRow("Enable Tracker", &config.tracker_enabled);
-        changed |= OverlayUI::CheckboxRow("Show Target Table", &config.tracker_overlay_table_enabled);
-        ImGui::Text("Mode: Simple Lock");
-        ImGui::Text("Runtime: %s", config.tracker_enabled ? "Tracker" : "Nearest Target");
-        ImGui::Text("Locked Track ID: %d", lockedTrackId);
-        ImGui::Text("Active Tracks: %d", static_cast<int>(tracks.size()));
+        changed |= OverlayUI::CheckboxRow("启用追踪器", &config.tracker_enabled);
+        changed |= OverlayUI::CheckboxRow("显示目标表", &config.tracker_overlay_table_enabled);
+        ImGui::Text("模式：简单锁定");
+        ImGui::Text("运行模式：%s", config.tracker_enabled ? "追踪器" : "最近目标");
+        ImGui::Text("锁定追踪 ID：%d", lockedTrackId);
+        ImGui::Text("活动追踪：%d", static_cast<int>(tracks.size()));
         OverlayUI::EndSection();
     }
 
-    if (config.tracker_overlay_table_enabled && OverlayUI::BeginSection("Tracks", "tracker_section_tracks"))
+    if (config.tracker_overlay_table_enabled && OverlayUI::BeginSection("追踪", "tracker_section_tracks"))
     {
         if (tracks.empty())
         {
-            ImGui::TextDisabled("No active tracks");
+            ImGui::TextDisabled("无活动追踪");
         }
         else if (ImGui::BeginTable("tracker_tracks_table", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
         {
             ImGui::TableSetupColumn("ID");
-            ImGui::TableSetupColumn("Class");
-            ImGui::TableSetupColumn("Locked");
-            ImGui::TableSetupColumn("Observed");
-            ImGui::TableSetupColumn("Missed");
-            ImGui::TableSetupColumn("Pivot");
-            ImGui::TableSetupColumn("Speed");
+            ImGui::TableSetupColumn("类别");
+            ImGui::TableSetupColumn("锁定");
+            ImGui::TableSetupColumn("已观测");
+            ImGui::TableSetupColumn("丢失");
+            ImGui::TableSetupColumn("中心点");
+            ImGui::TableSetupColumn("速度");
             ImGui::TableHeadersRow();
 
             for (const auto& track : tracks)
@@ -153,9 +153,9 @@ void draw_tracker()
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%d", track.classId);
                 ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%s", track.isLocked ? "Yes" : "No");
+                ImGui::Text("%s", track.isLocked ? "是" : "否");
                 ImGui::TableSetColumnIndex(3);
-                ImGui::Text("%s", track.observedThisFrame ? "Yes" : "No");
+                ImGui::Text("%s", track.observedThisFrame ? "是" : "否");
                 ImGui::TableSetColumnIndex(4);
                 ImGui::Text("%d", track.missedFrames);
                 ImGui::TableSetColumnIndex(5);

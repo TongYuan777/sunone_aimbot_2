@@ -46,18 +46,18 @@ void draw_ai()
     {
         OverlayExportUI::DrawTensorRtExportPanel(
             "ai_tensor_rt_export",
-            "TensorRT engine export",
-            "Compiling optimized AI inference engine",
+            "TensorRT 引擎导出",
+            "正在编译优化后的 AI 推理引擎",
             config.ai_model.c_str(),
-            "Cancel export");
+            "取消导出");
     }
 #endif
     std::vector<std::string> availableModels = getAvailableModels();
-    if (OverlayUI::BeginSection("Model", "ai_section_model"))
+    if (OverlayUI::BeginSection("模型", "ai_section_model"))
     {
         if (availableModels.empty())
         {
-            ImGui::Text("No models available in the 'models' folder.");
+            ImGui::Text("'models' 文件夹中没有可用模型。");
         }
         else
         {
@@ -78,7 +78,7 @@ void draw_ai()
             }
 
             {
-                const auto row = OverlayUI::BeginSettingRow("Model");
+                const auto row = OverlayUI::BeginSettingRow("模型");
                 if (ImGui::Combo("##model", &currentModelIndex, modelsItems.data(), static_cast<int>(modelsItems.size())))
                 {
                     if (config.ai_model != availableModels[currentModelIndex])
@@ -91,28 +91,28 @@ void draw_ai()
                 OverlayUI::EndSettingRow(row);
             }
 
-            OverlayUI::TextRow(config.fixed_input_size ? "Fixed model size: Enabled" : "Fixed model size: Disabled",
+            OverlayUI::TextRow(config.fixed_input_size ? "固定模型尺寸：已启用" : "固定模型尺寸：已禁用",
                 IM_COL32(188, 188, 188, 255));
         }
         OverlayUI::EndSection();
     }
 
-    if (OverlayUI::BeginSection("Detection", "ai_section_detection"))
+    if (OverlayUI::BeginSection("检测", "ai_section_detection"))
     {
         {
-            const auto row = OverlayUI::BeginSettingRow("Confidence Threshold");
+            const auto row = OverlayUI::BeginSettingRow("置信度阈值");
             ImGui::SliderFloat("##confidence_threshold", &config.confidence_threshold, 0.01f, 1.00f, "%.2f");
             OverlayUI::EndSettingRow(row);
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("NMS Threshold");
+            const auto row = OverlayUI::BeginSettingRow("NMS 阈值");
             ImGui::SliderFloat("##nms_threshold", &config.nms_threshold, 0.00f, 1.00f, "%.2f");
             OverlayUI::EndSettingRow(row);
         }
 
         {
-            const auto row = OverlayUI::BeginSettingRow("Max Detections");
+            const auto row = OverlayUI::BeginSettingRow("最大检测数");
             ImGui::SliderInt("##max_detections", &config.max_detections, 1, 100);
             OverlayUI::EndSettingRow(row);
         }

@@ -106,15 +106,15 @@ void draw_stats()
         }
     }
 
-    if (OverlayUI::BeginSection("Time Breakdown", "stats_section_time_breakdown"))
+    if (OverlayUI::BeginSection("耗时分解", "stats_section_time_breakdown"))
     {
-        ImGui::PlotLines("Preprocess", preprocess_times, IM_ARRAYSIZE(preprocess_times), index_inf, nullptr, 0.0f, 20.0f, ImVec2(0, 40));
-        ImGui::SameLine(); ImGui::Text("%.2f | Avg: %.2f", current_preprocess, avg_preprocess_cached);
+        ImGui::PlotLines("预处理", preprocess_times, IM_ARRAYSIZE(preprocess_times), index_inf, nullptr, 0.0f, 20.0f, ImVec2(0, 40));
+        ImGui::SameLine(); ImGui::Text("%.2f | 平均：%.2f", current_preprocess, avg_preprocess_cached);
 
-        ImGui::PlotLines("Inference", inference_times, IM_ARRAYSIZE(inference_times), index_inf, nullptr, 0.0f, 20.0f, ImVec2(0, 40));
+        ImGui::PlotLines("推理", inference_times, IM_ARRAYSIZE(inference_times), index_inf, nullptr, 0.0f, 20.0f, ImVec2(0, 40));
         ImGui::SameLine();
 
-        ImGui::Text("%.2f | Avg:", current_inference);
+        ImGui::Text("%.2f | 平均：", current_inference);
         ImGui::SameLine();
 
         const bool inf_slow = (avg_inference_cached > 20.0f);
@@ -126,32 +126,32 @@ void draw_stats()
         if (inf_slow)
             ImGui::PopStyleColor();
 
-        ImGui::PlotLines("Copy", copy_times, IM_ARRAYSIZE(copy_times), index_inf, nullptr, 0.0f, 10.0f, ImVec2(0, 40));
-        ImGui::SameLine(); ImGui::Text("%.2f | Avg: %.2f", current_copy, avg_copy_cached);
+        ImGui::PlotLines("拷贝", copy_times, IM_ARRAYSIZE(copy_times), index_inf, nullptr, 0.0f, 10.0f, ImVec2(0, 40));
+        ImGui::SameLine(); ImGui::Text("%.2f | 平均：%.2f", current_copy, avg_copy_cached);
 
-        ImGui::PlotLines("Postprocess", postprocess_times, IM_ARRAYSIZE(postprocess_times), index_inf, nullptr, 0.0f, 10.0f, ImVec2(0, 40));
-        ImGui::SameLine(); ImGui::Text("%.2f | Avg: %.2f", current_post, avg_post_cached);
+        ImGui::PlotLines("后处理", postprocess_times, IM_ARRAYSIZE(postprocess_times), index_inf, nullptr, 0.0f, 10.0f, ImVec2(0, 40));
+        ImGui::SameLine(); ImGui::Text("%.2f | 平均：%.2f", current_post, avg_post_cached);
 
         ImGui::PlotLines("NMS", nms_times, IM_ARRAYSIZE(nms_times), index_inf, nullptr, 0.0f, 5.0f, ImVec2(0, 40));
-        ImGui::SameLine(); ImGui::Text("%.2f | Avg: %.2f", current_nms, avg_nms_cached);
+        ImGui::SameLine(); ImGui::Text("%.2f | 平均：%.2f", current_nms, avg_nms_cached);
 
         OverlayUI::EndSection();
     }
 
-    if (OverlayUI::BeginSection("Capture FPS", "stats_section_capture_fps"))
+    if (OverlayUI::BeginSection("采集帧率", "stats_section_capture_fps"))
     {
         const float fpsPlotMax = (captureUsesMonitorRefresh && cachedMonitorRefreshHz > 1.0)
             ? static_cast<float>(cachedMonitorRefreshHz)
             : 360.0f;
         ImGui::PlotLines("##fps_plot", capture_fps_vals, IM_ARRAYSIZE(capture_fps_vals), index_fps, nullptr, 0.0f, fpsPlotMax, ImVec2(0, 60));
         ImGui::SameLine();
-        ImGui::Text("Now: %.1f | Avg: %.1f", current_fps, avg_fps_cached);
+        ImGui::Text("当前：%.1f | 平均：%.1f", current_fps, avg_fps_cached);
         if (captureUsesMonitorRefresh && cachedMonitorRefreshHz > 1.0)
         {
             const float refreshHz = static_cast<float>(cachedMonitorRefreshHz);
             const float fpsLoad = std::clamp(avg_fps_cached / refreshHz, 0.0f, 1.0f);
             ImGui::Spacing();
-            ImGui::Text("Monitor load");
+            ImGui::Text("显示器负载");
             ImGui::SameLine();
             ImGui::TextDisabled("%.1f / %.1f Hz (%.0f%%)", avg_fps_cached, refreshHz, fpsLoad * 100.0f);
             ImGui::ProgressBar(fpsLoad, ImVec2(-1.0f, 18.0f), "");
@@ -178,77 +178,77 @@ void draw_stats()
     const int sourceWidth = screenWidth.load(std::memory_order_relaxed);
     const int sourceHeight = screenHeight.load(std::memory_order_relaxed);
 
-    std::string captureSource = "Unknown";
-    std::string sourceSizeLabel = "Desktop size";
+    std::string captureSource = "未知";
+    std::string sourceSizeLabel = "桌面尺寸";
     if (config.capture_method == "duplication_api")
     {
-        captureSource = "Monitor " + std::to_string(std::max(0, config.monitor_idx) + 1);
+        captureSource = "显示器 " + std::to_string(std::max(0, config.monitor_idx) + 1);
     }
     else if (config.capture_method == "winrt")
     {
         if (config.capture_target == "window")
         {
             captureSource = config.capture_window_title.empty()
-                ? "Window target is empty"
-                : "Window: " + config.capture_window_title;
-            sourceSizeLabel = "Window size";
+                ? "窗口目标为空"
+                : "窗口：" + config.capture_window_title;
+            sourceSizeLabel = "窗口尺寸";
         }
         else
         {
-            captureSource = "Monitor " + std::to_string(std::max(0, config.monitor_idx) + 1);
+            captureSource = "显示器 " + std::to_string(std::max(0, config.monitor_idx) + 1);
         }
     }
     else if (config.capture_method == "virtual_camera")
     {
         captureSource =
-            "Camera: " + config.virtual_camera_name + " (" +
+            "摄像头：" + config.virtual_camera_name + " (" +
             std::to_string(config.virtual_camera_width) + "x" +
             std::to_string(config.virtual_camera_heigth) + ")";
-        sourceSizeLabel = "Camera size";
+        sourceSizeLabel = "摄像头尺寸";
     }
     else if (config.capture_method == "udp_capture")
     {
         captureSource = "UDP " + config.udp_ip + ":" + std::to_string(config.udp_port);
-        sourceSizeLabel = "Stream size";
+        sourceSizeLabel = "流尺寸";
     }
 
-    if (OverlayUI::BeginSection("Capture Details", "stats_section_capture_details"))
+    if (OverlayUI::BeginSection("采集详情", "stats_section_capture_details"))
     {
-        ImGui::Text("Method: %s", config.capture_method.c_str());
-        ImGui::Text("Backend: %s", config.backend.c_str());
-        ImGui::TextWrapped("Source: %s", captureSource.c_str());
+        ImGui::Text("采集方式：%s", config.capture_method.c_str());
+        ImGui::Text("后端：%s", config.backend.c_str());
+        ImGui::TextWrapped("来源：%s", captureSource.c_str());
 
         if (sourceWidth > 0 && sourceHeight > 0)
-            ImGui::Text("%s: %dx%d", sourceSizeLabel.c_str(), sourceWidth, sourceHeight);
+            ImGui::Text("%s：%dx%d", sourceSizeLabel.c_str(), sourceWidth, sourceHeight);
         else
-            ImGui::TextDisabled("%s: n/a", sourceSizeLabel.c_str());
+            ImGui::TextDisabled("%s：无", sourceSizeLabel.c_str());
 
         if (captureUsesMonitorRefresh)
         {
             if (cachedMonitorRefreshHz > 0.0)
-                ImGui::Text("Monitor refresh: %.2f Hz", cachedMonitorRefreshHz);
+                ImGui::Text("显示器刷新率：%.2f Hz", cachedMonitorRefreshHz);
             else
-                ImGui::TextDisabled("Monitor refresh: n/a");
+                ImGui::TextDisabled("显示器刷新率：无");
         }
 
         if (latestWidth > 0 && latestHeight > 0)
-            ImGui::Text("Latest frame: %dx%d", latestWidth, latestHeight);
+            ImGui::Text("最新帧：%dx%d", latestWidth, latestHeight);
         else
-            ImGui::TextDisabled("Latest frame: n/a");
+            ImGui::TextDisabled("最新帧：无");
 
-        ImGui::Text("Detection resolution: %d", config.detection_resolution);
+        ImGui::Text("检测分辨率：%d", config.detection_resolution);
         if (captureFpsLimit > 0)
-            ImGui::Text("Capture FPS limit: %d", captureFpsLimit);
+            ImGui::Text("采集帧率限制：%d", captureFpsLimit);
         else
-            ImGui::Text("Capture FPS limit: unlimited");
+            ImGui::Text("采集帧率限制：无限制");
 
         if (currentFrameTimeMs > 0.0f || avgFrameTimeMs > 0.0f)
-            ImGui::Text("Frame time: now %.2f ms | avg %.2f ms", currentFrameTimeMs, avgFrameTimeMs);
+            ImGui::Text("帧时间：当前 %.2f ms | 平均 %.2f ms", currentFrameTimeMs, avgFrameTimeMs);
         else
-            ImGui::TextDisabled("Frame time: n/a");
+            ImGui::TextDisabled("帧时间：无");
 
-        ImGui::Text("Frame queue depth: %d", static_cast<int>(queueDepth));
-        ImGui::Text("Circle FOV: %s", config.circle_fov_enabled ? "on" : "off");
+        ImGui::Text("帧队列深度：%d", static_cast<int>(queueDepth));
+        ImGui::Text("圆形视野：%s", config.circle_fov_enabled ? "开启" : "关闭");
 
         static bool winrtStatsInitialized = false;
         static uint64_t lastWinrtPolls = 0;
@@ -318,10 +318,10 @@ void draw_stats()
             }
 
             ImGui::Separator();
-            ImGui::Text("WinRT frames: %.1f/s | pulled: %.1f/s", winrtReturnedRate, winrtDrainedRate);
-            ImGui::Text("WinRT empty polls: %.1f/s | polls: %.1f/s", winrtEmptyRate, winrtPollRate);
-            ImGui::Text("WinRT readback avg: %.3f ms | Map: %.3f ms", winrtReadbackAvgMs, winrtMapAvgMs);
-            ImGui::Text("WinRT memcpy avg: %.3f ms", winrtPixelCopyAvgMs);
+            ImGui::Text("WinRT 帧：%.1f/s | 拉取：%.1f/s", winrtReturnedRate, winrtDrainedRate);
+            ImGui::Text("WinRT 空轮询：%.1f/s | 轮询：%.1f/s", winrtEmptyRate, winrtPollRate);
+            ImGui::Text("WinRT 读回平均：%.3f ms | 映射：%.3f ms", winrtReadbackAvgMs, winrtMapAvgMs);
+            ImGui::Text("WinRT 内存拷贝平均：%.3f ms", winrtPixelCopyAvgMs);
         }
         else
         {
@@ -340,24 +340,24 @@ void draw_stats()
 
             std::string directCaptureStatus;
             if (!canUseCudaCapture)
-                directCaptureStatus = "N/A (requires duplication_api)";
+                directCaptureStatus = "不适用（需要 duplication_api）";
             else if (!config.capture_use_cuda)
-                directCaptureStatus = "Disabled by user";
+                directCaptureStatus = "用户已禁用";
             else if (depthMaskEnabled)
-                directCaptureStatus = "CPU fallback (depth mask is enabled)";
+                directCaptureStatus = "CPU 回退（深度遮罩已启用）";
             else
-                directCaptureStatus = "Active";
+                directCaptureStatus = "已激活";
 
             ImGui::Separator();
-            ImGui::Text("CUDA Direct Capture: %s", config.capture_use_cuda ? "enabled" : "disabled");
-            ImGui::Text("Depth mask: %s", depthMaskEnabled ? "on" : "off");
-            ImGui::Text("Capture pipeline: %s", directCaptureActive ? "GPU direct path" : "CPU readback");
+            ImGui::Text("CUDA 直接采集：%s", config.capture_use_cuda ? "启用" : "禁用");
+            ImGui::Text("深度遮罩：%s", depthMaskEnabled ? "开启" : "关闭");
+            ImGui::Text("采集管线：%s", directCaptureActive ? "GPU 直通" : "CPU 回读");
 
             if (directCaptureActive)
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 1.0f, 0.45f, 1.0f));
             else
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.28f, 1.0f));
-            ImGui::TextWrapped("Direct capture status: %s", directCaptureStatus.c_str());
+            ImGui::TextWrapped("直接采集状态：%s", directCaptureStatus.c_str());
             ImGui::PopStyleColor();
 
             static uint64_t lastGpuAttempts = 0;
@@ -440,12 +440,12 @@ void draw_stats()
                 lastGpuStatsTime = now;
             }
 
-            ImGui::Text("DDA submitted frames: %.1f/s | attempts: %.1f/s", gpuCapturedRate, gpuAttemptRate);
-            ImGui::Text("DDA present frames: %.1f/s | mouse-only: %.1f/s", gpuPresentRate, gpuMouseOnlyRate);
-            ImGui::Text("DDA metadata-only: %.1f/s | coalesced: %.1f/s", gpuMetadataOnlyRate, gpuCoalescedRate);
-            ImGui::Text("DDA GPU timeouts: %.1f/s | accumulated: %.1f/s", gpuTimeoutRate, gpuAccumulatedRate);
-            ImGui::Text("DDA GPU missed/coalesced: %.1f/s", gpuMissedRate);
-            ImGui::Text("DDA CPU fallback: %.1f/s | attempts: %.1f/s", cpuFallbackFrameRate, cpuFallbackAttemptRate);
+            ImGui::Text("DDA 提交帧：%.1f/s | 尝试：%.1f/s", gpuCapturedRate, gpuAttemptRate);
+            ImGui::Text("DDA 显示帧：%.1f/s | 仅鼠标：%.1f/s", gpuPresentRate, gpuMouseOnlyRate);
+            ImGui::Text("DDA 仅元数据：%.1f/s | 合并：%.1f/s", gpuMetadataOnlyRate, gpuCoalescedRate);
+            ImGui::Text("DDA GPU 超时：%.1f/s | 累积：%.1f/s", gpuTimeoutRate, gpuAccumulatedRate);
+            ImGui::Text("DDA GPU 丢失/合并：%.1f/s", gpuMissedRate);
+            ImGui::Text("DDA CPU 回退：%.1f/s | 尝试：%.1f/s", cpuFallbackFrameRate, cpuFallbackAttemptRate);
         }
 #endif
 
