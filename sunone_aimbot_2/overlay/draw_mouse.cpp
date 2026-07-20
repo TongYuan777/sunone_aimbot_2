@@ -371,7 +371,7 @@ static void draw_mouse_page(MouseSettingsPage page)
     }
 
     if (shouldDrawMousePage(page, MouseSettingsPage::Movement) &&
-        OverlayUI::BeginSection("Wind Mouse", "mouse_section_wind_mouse"))
+        OverlayUI::BeginSection("风鼠标算法", "mouse_section_wind_mouse"))
     {
         if (OverlayUI::CheckboxRow("启用 WindMouse", &config.wind_mouse_enabled))
         {
@@ -403,7 +403,7 @@ static void draw_mouse_page(MouseSettingsPage page)
             OverlayConfig_MarkDirty();
         }
 
-        if (OverlayUI::ButtonRow("Wind Mouse", "恢复默认", "reset_wind_mouse_defaults"))
+        if (OverlayUI::ButtonRow("WindMouse", "恢复默认", "reset_wind_mouse_defaults"))
         {
             config.wind_G = 18.0f;
             config.wind_W = 15.0f;
@@ -638,19 +638,19 @@ static void draw_mouse_page(MouseSettingsPage page)
         {
             if (ghub_version == "13.1.4")
             {
-                std::string ghub_version_label = "The correct version of Ghub is installed: " + ghub_version;
+                std::string ghub_version_label = "已安装正确版本的 GHub：" + ghub_version;
                 ImGui::Text(ghub_version_label.c_str());
             }
             else
             {
-                ImGui::Text("The wrong version of Ghub is installed or the path to Ghub is not set by default.\nDefault system path: C:\\Program Files\\LGHUB");
-                if (OverlayUI::ButtonRow("GHub", "Open GHub Docs", "ghub_docs"))
+                ImGui::Text("已安装的 GHub 版本错误，或未设置默认 GHub 路径。\n默认系统路径：C:\\Program Files\\LGHUB");
+                if (OverlayUI::ButtonRow("GHub", "打开 GHub 文档", "ghub_docs"))
                 {
                     ShellExecute(0, 0, L"https://github.com/SunOner/sunone_aimbot_2/blob/main/docs/guides.md#g-hub-input-method", 0, 0, SW_SHOW);
                 }
             }
 
-            ImGui::TextColored(ImVec4(255, 0, 0, 255), "Use at your own risk, the method is detected in some games.");
+            ImGui::TextColored(ImVec4(255, 0, 0, 255), "自行承担风险，部分游戏会检测此输入方式。");
         }
         else if (config.input_method == "TEENSY41_HID")
         {
@@ -662,11 +662,11 @@ static void draw_mouse_page(MouseSettingsPage page)
 
             if (teensy41Connected)
             {
-                ImGui::TextColored(ImVec4(0, 255, 0, 255), "Teensy 4.1 RawHID connected");
+                ImGui::TextColored(ImVec4(0, 255, 0, 255), "Teensy 4.1 RawHID 已连接");
             }
             else
             {
-                ImGui::TextColored(ImVec4(255, 0, 0, 255), "Teensy 4.1 RawHID not connected");
+                ImGui::TextColored(ImVec4(255, 0, 0, 255), "Teensy 4.1 RawHID 未连接");
             }
 
             static char serial[64] = "";
@@ -706,16 +706,16 @@ static void draw_mouse_page(MouseSettingsPage page)
                 reconnect_ms = config.teensy_hid_reconnect_interval_ms;
             }
 
-            OverlayUI::InputTextRow("Serial", serial, sizeof(serial));
-            OverlayUI::InputTextRow("VID filter", vid, sizeof(vid));
-            OverlayUI::InputTextRow("PID filter", pid, sizeof(pid));
+            OverlayUI::InputTextRow("序列号", serial, sizeof(serial));
+            OverlayUI::InputTextRow("VID 筛选", vid, sizeof(vid));
+            OverlayUI::InputTextRow("PID 筛选", pid, sizeof(pid));
             OverlayUI::InputIntRow("Usage Page", &usage_page);
             OverlayUI::InputIntRow("Usage ID", &usage_id);
-            OverlayUI::InputIntRow("Open Index", &open_index);
-            OverlayUI::InputIntRow("Packet Timeout ms", &timeout_ms);
-            OverlayUI::InputIntRow("Reconnect ms", &reconnect_ms);
+            OverlayUI::InputIntRow("打开索引", &open_index);
+            OverlayUI::InputIntRow("数据包超时（ms）", &timeout_ms);
+            OverlayUI::InputIntRow("重连间隔（ms）", &reconnect_ms);
 
-            if (OverlayUI::ButtonRow("Teensy HID", "Save & Reconnect", "teensy_hid_save_reconnect"))
+            if (OverlayUI::ButtonRow("Teensy HID", "保存并重连", "teensy_hid_save_reconnect"))
             {
                 config.teensy_hid_serial = serial;
                 config.teensy_hid_vid_filter = vid;
@@ -736,19 +736,19 @@ static void draw_mouse_page(MouseSettingsPage page)
         {
             if (razerControl && razerControl->isOpen())
             {
-                ImGui::TextColored(ImVec4(0, 255, 0, 255), "Razer rzctl connected");
+                ImGui::TextColored(ImVec4(0, 255, 0, 255), "Razer rzctl 已连接");
             }
             else
             {
-                ImGui::TextColored(ImVec4(255, 0, 0, 255), "Razer rzctl not connected");
+                ImGui::TextColored(ImVec4(255, 0, 0, 255), "Razer rzctl 未连接");
             }
-            ImGui::Text("Requires rzctl.dll next to ai.exe.");
-            ImGui::TextColored(ImVec4(255, 0, 0, 255), "Use at your own risk, the method is detected in some games.");
+            ImGui::Text("需要 rzctl.dll 放在 ai.exe 同目录下。");
+            ImGui::TextColored(ImVec4(255, 0, 0, 255), "自行承担风险，部分游戏会检测此输入方式。");
         }
         else if (config.input_method == "WIN32")
         {
-            ImGui::TextColored(ImVec4(255, 255, 255, 255), "This is a standard mouse input method, it may not work in most games. Use GHUB, RAZER, ARDUINO, RP2350, TEENSY41, or TEENSY41_HID.");
-            ImGui::TextColored(ImVec4(255, 0, 0, 255), "Use at your own risk, the method is detected in some games.");
+            ImGui::TextColored(ImVec4(255, 255, 255, 255), "这是标准的鼠标输入方式，大多数游戏中可能无效。请使用 GHUB、RAZER、ARDUINO、RP2350、TEENSY41 或 TEENSY41_HID。");
+            ImGui::TextColored(ImVec4(255, 0, 0, 255), "自行承担风险，部分游戏会检测此输入方式。");
         }
         else if (config.input_method == "KMBOX_NET")
         {
@@ -772,11 +772,11 @@ static void draw_mouse_page(MouseSettingsPage page)
                 last_uuid = config.kmbox_net_uuid;
             }
 
-            OverlayUI::InputTextRow("IP", ip, sizeof(ip));
-            OverlayUI::InputTextRow("Port", port, sizeof(port));
+            OverlayUI::InputTextRow("IP 地址", ip, sizeof(ip));
+            OverlayUI::InputTextRow("端口", port, sizeof(port));
             OverlayUI::InputTextRow("UUID", uuid, sizeof(uuid));
 
-            if (OverlayUI::ButtonRow("kmboxNet", "Save & Reconnect", "kmbox_net_save_reconnect"))
+            if (OverlayUI::ButtonRow("kmboxNet", "保存并重连", "kmbox_net_save_reconnect"))
             {
                 config.kmbox_net_ip = ip;
                 config.kmbox_net_port = port;
@@ -800,17 +800,17 @@ static void draw_mouse_page(MouseSettingsPage page)
 
             if (kmboxNetConnected)
             {
-                ImGui::TextColored(ImVec4(0, 255, 0, 255), "kmboxNet connected");
+                ImGui::TextColored(ImVec4(0, 255, 0, 255), "kmboxNet 已连接");
             }
             else
             {
-                ImGui::TextColored(ImVec4(255, 0, 0, 255), "kmboxNet not connected");
+                ImGui::TextColored(ImVec4(255, 0, 0, 255), "kmboxNet 未连接");
             }
 
             if (!kmboxNetConnected)
                 ImGui::BeginDisabled();
 
-            if (OverlayUI::ButtonRow("kmboxNet box", "Reboot box", "kmbox_net_reboot"))
+            if (OverlayUI::ButtonRow("kmboxNet 设备", "重启设备", "kmbox_net_reboot"))
             {
                 std::lock_guard<std::mutex> lock(inputDevicesMutex);
                 KmboxNetConnection* device =
@@ -821,7 +821,7 @@ static void draw_mouse_page(MouseSettingsPage page)
                     device->reboot();
             }
 
-            if (OverlayUI::ButtonRow("kmboxNet image", "Change image", "kmbox_net_image"))
+            if (OverlayUI::ButtonRow("kmboxNet 图像", "更换图像", "kmbox_net_image"))
             {
                 std::lock_guard<std::mutex> lock(inputDevicesMutex);
                 KmboxNetConnection* device =
@@ -851,9 +851,9 @@ static void draw_mouse_page(MouseSettingsPage page)
             }
 
             OverlayUI::InputTextRow("PIDVID", pidvid, sizeof(pidvid));
-            ImGui::TextDisabled("Format: PPPPVVVV (one field)");
+            ImGui::TextDisabled("格式：PPPPVVVV（单个字段）");
 
-            if (OverlayUI::ButtonRow("kmboxA", "Save & Reconnect", "kmbox_a_save_reconnect"))
+            if (OverlayUI::ButtonRow("kmboxA", "保存并重连", "kmbox_a_save_reconnect"))
             {
                 config.kmbox_a_pidvid = pidvid;
                 last_pidvid = config.kmbox_a_pidvid;
@@ -863,11 +863,11 @@ static void draw_mouse_page(MouseSettingsPage page)
 
             if (kmboxASerial && kmboxASerial->isOpen())
             {
-                ImGui::TextColored(ImVec4(0, 255, 0, 255), "kmboxA connected");
+                ImGui::TextColored(ImVec4(0, 255, 0, 255), "kmboxA 已连接");
             }
             else
             {
-                ImGui::TextColored(ImVec4(255, 0, 0, 255), "kmboxA not connected");
+                ImGui::TextColored(ImVec4(255, 0, 0, 255), "kmboxA 未连接");
             }
         }
         else if (config.input_method == "MAKCU")
@@ -895,7 +895,7 @@ static void draw_mouse_page(MouseSettingsPage page)
                 }
             }
 
-            if (OverlayUI::ComboRow("Makcu Port", &port_index, port_items.data(), static_cast<int>(port_items.size())))
+            if (OverlayUI::ComboRow("Makcu 端口", &port_index, port_items.data(), static_cast<int>(port_items.size())))
             {
                 config.makcu_port = port_list[port_index];
                 OverlayConfig_MarkDirty();
@@ -923,7 +923,7 @@ static void draw_mouse_page(MouseSettingsPage page)
                 }
             }
 
-            if (OverlayUI::ComboRow("Makcu Baudrate", &baud_index, baud_items.data(), static_cast<int>(baud_items.size())))
+            if (OverlayUI::ComboRow("Makcu 波特率", &baud_index, baud_items.data(), static_cast<int>(baud_items.size())))
             {
                 config.makcu_baudrate = baud_list[baud_index];
                 OverlayConfig_MarkDirty();
@@ -932,11 +932,11 @@ static void draw_mouse_page(MouseSettingsPage page)
 
             if (makcuSerial && makcuSerial->isOpen())
             {
-                ImGui::TextColored(ImVec4(0, 255, 0, 255), "Makcu connected");
+                ImGui::TextColored(ImVec4(0, 255, 0, 255), "Makcu 已连接");
             }
             else
             {
-                ImGui::TextColored(ImVec4(255, 0, 0, 255), "Makcu not connected");
+                ImGui::TextColored(ImVec4(255, 0, 0, 255), "Makcu 未连接");
             }
         }
         else if (config.input_method == "GAMEPAD_VIGEM")
@@ -977,7 +977,7 @@ static void draw_mouse_page(MouseSettingsPage page)
 
             int player_idx = config.gamepad_player_index;
             if (player_idx < 0 || player_idx > 3) player_idx = 0;
-            if (OverlayUI::ComboRow("玩家索引 / Player Index", &player_idx, player_items.data(), static_cast<int>(player_items.size())))
+            if (OverlayUI::ComboRow("玩家索引", &player_idx, player_items.data(), static_cast<int>(player_items.size())))
             {
                 config.gamepad_player_index = player_idx;
                 OverlayConfig_MarkDirty();
@@ -1002,7 +1002,7 @@ static void draw_mouse_page(MouseSettingsPage page)
 
             // 摇杆灵敏度
             float stick_scale = config.gamepad_stick_scale;
-            if (OverlayUI::SliderFloatRow("摇杆灵敏度 / Stick Scale", &stick_scale, 1.0f, 1000.0f))
+            if (OverlayUI::SliderFloatRow("摇杆灵敏度", &stick_scale, 1.0f, 1000.0f))
             {
                 config.gamepad_stick_scale = stick_scale;
                 OverlayConfig_MarkDirty();
@@ -1010,7 +1010,7 @@ static void draw_mouse_page(MouseSettingsPage page)
 
             // 死区
             int deadzone = config.gamepad_deadzone;
-            if (OverlayUI::SliderIntRow("摇杆死区 / Deadzone", &deadzone, 0, 10000))
+            if (OverlayUI::SliderIntRow("摇杆死区", &deadzone, 0, 10000))
             {
                 config.gamepad_deadzone = deadzone;
                 OverlayConfig_MarkDirty();
@@ -1027,13 +1027,13 @@ static void draw_mouse_page(MouseSettingsPage page)
                     pressedStr += pressed[i];
                 }
                 if (pressedStr.empty())
-                    ImGui::TextDisabled("当前按下 / Pressed: (无)");
+                    ImGui::TextDisabled("当前按下：（无）");
                 else
-                    ImGui::TextColored(ImVec4(108, 255, 108, 255), "当前按下 / Pressed: %s", pressedStr.c_str());
+                    ImGui::TextColored(ImVec4(108, 255, 108, 255), "当前按下：%s", pressedStr.c_str());
             }
             else
             {
-                ImGui::TextDisabled("当前按下 / Pressed: (手柄未连接)");
+                ImGui::TextDisabled("当前按下：（手柄未连接）");
             }
 
             // -------- 按键映射 + 捕获按钮 --------
@@ -1127,29 +1127,29 @@ static void draw_mouse_page(MouseSettingsPage page)
                 }
             };
 
-            drawButtonComboWithCapture("自瞄按键 / Aim Button", config.gamepad_aim_button, "aim");
-            drawButtonComboWithCapture("射击按键 / Shoot Button", config.gamepad_shoot_button, "shoot");
-            drawButtonComboWithCapture("缩放按键 / Zoom Button", config.gamepad_zoom_button, "zoom");
+            drawButtonComboWithCapture("自瞄按键", config.gamepad_aim_button, "aim");
+            drawButtonComboWithCapture("射击按键", config.gamepad_shoot_button, "shoot");
+            drawButtonComboWithCapture("缩放按键", config.gamepad_zoom_button, "zoom");
 
             // -------- 连接状态 --------
             if (gamepad)
             {
                 if (gamepad->isVirtualConnected())
-                    ImGui::TextColored(ImVec4(0, 255, 0, 255), "虚拟手柄：已连接 / Virtual controller: Connected");
+                    ImGui::TextColored(ImVec4(0, 255, 0, 255), "虚拟手柄：已连接");
                 else
-                    ImGui::TextColored(ImVec4(255, 0, 0, 255), "虚拟手柄：未连接 / Virtual controller: Not connected");
+                    ImGui::TextColored(ImVec4(255, 0, 0, 255), "虚拟手柄：未连接");
 
                 if (gamepad->isPhysicalConnected())
-                    ImGui::TextColored(ImVec4(0, 255, 0, 255), "真实手柄：已连接 / Physical controller: Connected");
+                    ImGui::TextColored(ImVec4(0, 255, 0, 255), "真实手柄：已连接");
                 else
-                    ImGui::TextColored(ImVec4(255, 0, 0, 255), "真实手柄：未连接 / Physical controller: Not connected");
+                    ImGui::TextColored(ImVec4(255, 0, 0, 255), "真实手柄：未连接");
             }
             else
             {
-                ImGui::TextColored(ImVec4(255, 0, 0, 255), "手柄未初始化 / Gamepad not initialized");
+                ImGui::TextColored(ImVec4(255, 0, 0, 255), "手柄未初始化");
             }
 
-            ImGui::TextWrapped("提示：需要安装 ViGEmBus 驱动并将 ViGEmClient.dll 放入程序目录或 PATH。\nNote: Requires ViGEmBus driver and ViGEmClient.dll in PATH.");
+            ImGui::TextWrapped("提示：需要安装 ViGEmBus 驱动，并将 ViGEmClient.dll 放入程序目录或 PATH。");
             ImGui::TextWrapped("点击 \"捕获\" 后按下任意手柄按键即可自动填入对应字段。");
         }
 

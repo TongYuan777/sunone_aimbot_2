@@ -468,7 +468,9 @@ void GamepadViGEm::updateCaptureLocked()
         return;
 
     std::lock_guard<std::mutex> capLock(captureMutex_);
-    if (hasCaptured_)
+    // 锁内复检：避免与 cancelCapture() 之间的 TOCTOU 竞态
+    // （用户在收集按键后、获取锁前点击"停止"，此时不应再写入捕获结果）
+    if (!capturing_.load() || hasCaptured_)
         return;
     capturedButton_ = pressed.front();
     hasCaptured_ = true;
