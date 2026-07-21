@@ -249,48 +249,48 @@ static bool drawDataCollectionSection()
     if (!OverlayUI::BeginSection("数据采集", "debug_section_data_collection"))
         return false;
 
-    changed |= OverlayUI::CheckboxRow("运行时采集数据", &config.collect_data_while_playing);
-    changed |= OverlayUI::CheckboxRow("仅自瞄激活时", &config.collect_only_when_aimbot_running);
-    changed |= OverlayUI::CheckboxRow("仅存在目标时", &config.collect_only_when_targets_present);
+    changed |= OverlayUI::CheckboxRow("运行时采集数据", &config.collect_data_while_playing, "##value", "在游戏运行时持续采集训练数据");
+    changed |= OverlayUI::CheckboxRow("仅自瞄激活时", &config.collect_only_when_aimbot_running, "##value", "仅自瞄功能激活时才采集数据");
+    changed |= OverlayUI::CheckboxRow("仅存在目标时", &config.collect_only_when_targets_present, "##value", "仅画面中存在检测目标时才采集");
 
     int saveEveryNFrames = config.collect_save_every_n_frames;
-    if (OverlayUI::SliderIntRow("每 N 帧保存", &saveEveryNFrames, 1, 120))
+    if (OverlayUI::SliderIntRow("每 N 帧保存", &saveEveryNFrames, 1, 120, "%d", "##value", "每隔多少帧保存一次样本，值越小采集越频繁"))
     {
         config.collect_save_every_n_frames = saveEveryNFrames;
         changed = true;
     }
 
     int jpegQuality = config.collect_jpeg_quality;
-    if (OverlayUI::SliderIntRow("JPEG 质量", &jpegQuality, 50, 100))
+    if (OverlayUI::SliderIntRow("JPEG 质量", &jpegQuality, 50, 100, "%d", "##value", "保存图片的 JPEG 压缩质量，越高越清晰"))
     {
         config.collect_jpeg_quality = jpegQuality;
         changed = true;
     }
 
-    if (OverlayUI::InputTextRow("输出文件夹", g_collectOutputDirBuffer, sizeof(g_collectOutputDirBuffer)))
+    if (OverlayUI::InputTextRow("输出文件夹", g_collectOutputDirBuffer, sizeof(g_collectOutputDirBuffer), 0, "##value", "采集样本保存的输出目录路径"))
         changed |= applyDebugTextBuffer(config.collect_output_dir, g_collectOutputDirMirror, g_collectOutputDirBuffer);
 
     if (OverlayUI::BeginSubsection("自动标注"))
     {
-        changed |= OverlayUI::CheckboxRow("写入 YOLO txt 标签", &config.auto_label_data);
+        changed |= OverlayUI::CheckboxRow("写入 YOLO txt 标签", &config.auto_label_data, "##value", "自动生成 YOLO 格式的标签文件");
 
         ImGui::BeginDisabled(!config.auto_label_data);
 
         float minConf = config.auto_label_min_conf;
-        if (OverlayUI::SliderFloatRow("最低置信度", &minConf, 0.01f, 0.99f, "%.2f"))
+        if (OverlayUI::SliderFloatRow("最低置信度", &minConf, 0.01f, 0.99f, "%.2f", "##value", "仅记录置信度高于此阈值的目标"))
         {
             config.auto_label_min_conf = minConf;
             changed = true;
         }
 
         int maxBoxes = config.auto_label_max_boxes;
-        if (OverlayUI::SliderIntRow("每文件最大框数", &maxBoxes, 1, 100))
+        if (OverlayUI::SliderIntRow("每文件最大框数", &maxBoxes, 1, 100, "%d", "##value", "单个标签文件最多包含的检测框数"))
         {
             config.auto_label_max_boxes = maxBoxes;
             changed = true;
         }
 
-        if (OverlayUI::InputTextRow("类别筛选", g_collectClassFilterBuffer, sizeof(g_collectClassFilterBuffer)))
+        if (OverlayUI::InputTextRow("类别筛选", g_collectClassFilterBuffer, sizeof(g_collectClassFilterBuffer), 0, "##value", "仅记录指定类别 ID，逗号分隔，留空记录全部"))
             changed |= applyDebugTextBuffer(config.auto_label_record_classes, g_collectClassFilterMirror, g_collectClassFilterBuffer);
 
         ImGui::TextDisabled("留空以记录所有类别。使用逗号分隔的 ID，如 0,1。");
@@ -311,10 +311,10 @@ static bool drawDataCollectionSection()
     else
         ImGui::TextDisabled("状态：空闲");
 
-    if (OverlayUI::ButtonRow("解析目录", "复制路径", "copy_resolved_path"))
+    if (OverlayUI::ButtonRow("解析目录", "复制路径", "copy_resolved_path", "将解析后的输出目录路径复制到剪贴板"))
         ImGui::SetClipboardText(ui.resolved_output_dir.c_str());
 
-    if (OverlayUI::ButtonRow("采集计数器", "重置计数", "reset_collect_counters"))
+    if (OverlayUI::ButtonRow("采集计数器", "重置计数", "reset_collect_counters", "重置已观测帧与保存计数的统计值"))
         cvm::ResetDataCollectionRuntime();
 
     OverlayUI::EndSection();
@@ -466,15 +466,15 @@ void draw_debug()
         if (drawScreenshotButtonRows())
             changed = true;
 
-        if (OverlayUI::InputIntRow("截图延迟", &config.screenshot_delay, 50, 500))
+        if (OverlayUI::InputIntRow("截图延迟", &config.screenshot_delay, 50, 500, 0, "##value", "连续截图之间的间隔毫秒数"))
             changed = true;
-        if (OverlayUI::CheckboxRow("详细控制台输出", &config.verbose))
+        if (OverlayUI::CheckboxRow("详细控制台输出", &config.verbose, "##value", "在控制台输出更详细的运行日志信息"))
             changed = true;
 
         if (config.screenshot_delay < 0)
             config.screenshot_delay = 0;
 
-        if (OverlayUI::ButtonRow("OpenCV", "打印构建信息", "button_cv2_build_info"))
+        if (OverlayUI::ButtonRow("OpenCV", "打印构建信息", "button_cv2_build_info", "在控制台打印 OpenCV 编译配置信息"))
         {
             std::cout << cv::getBuildInformation() << std::endl;
         }
