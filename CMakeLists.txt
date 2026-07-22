@@ -290,6 +290,8 @@ set(AIMBOT_SOURCES
     "${SRC_DIR}/scr/data_collector.cpp"
     "${SRC_DIR}/scr/other_tools.cpp"
     "${SRC_DIR}/sunone_aimbot_2.cpp"
+    "${SRC_DIR}/embedded_resource.cpp"
+    "${SRC_DIR}/embedded_resources.rc"
 )
 
 if(AIMBOT_USE_CUDA)
