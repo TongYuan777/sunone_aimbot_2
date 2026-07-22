@@ -57,7 +57,10 @@ try {
     # 优先使用精简编译版（tools\build_opencv_minimal.ps1 的产物），
     # 体积约 15-20 MB，仅包含 core/imgproc/imgcodecs/videoio 四个模块。
     $opencvMinimalRoot = Resolve-RepoPath "sunone_aimbot_2\modules\opencv\build\dml_minimal"
-    $opencvMinimalLayout = Get-OpenCvWorldLayout -Root $opencvMinimalRoot -Configuration $Configuration
+    $opencvMinimalLayout = $null
+    if (Test-Path -LiteralPath $opencvMinimalRoot) {
+        $opencvMinimalLayout = Get-OpenCvWorldLayout -Root $opencvMinimalRoot -Configuration $Configuration
+    }
     if ($opencvMinimalLayout) {
         $opencvDmlRoot = $opencvMinimalRoot
         $opencvLayout = $opencvMinimalLayout
