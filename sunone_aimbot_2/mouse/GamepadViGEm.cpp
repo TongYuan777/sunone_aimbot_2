@@ -650,5 +650,16 @@ void GamepadViGEm::pollingThreadFunc()
         // 轮询周期（可配置，决定虚拟手柄回报率 = 1000/interval Hz）
         const int intervalMs = pollIntervalMs_.load();
         std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs > 0 ? intervalMs : 10));
+
+        // 诊断日志：每 3 秒输出一次心跳，确认轮询线程在运行
+        static auto lastHeartbeat = std::chrono::steady_clock::now();
+        auto nowHeartbeat = std::chrono::steady_clock::now();
+        if (nowHeartbeat - lastHeartbeat > std::chrono::seconds(3))
+        {
+            std::cout << "[Gamepad] poll thread alive, physical=" << physicalConnected_.load()
+                      << ", virtual=" << virtualConnected_.load()
+                      << ", buttons=0x" << std::hex << buttons_ << std::dec << std::endl;
+            lastHeartbeat = nowHeartbeat;
+        }
     }
 }
