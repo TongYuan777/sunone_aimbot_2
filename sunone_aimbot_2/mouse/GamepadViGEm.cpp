@@ -17,7 +17,9 @@ using PVIGEM_CLIENT = void*;
 using PVIGEM_TARGET = void*;
 using VIGEM_ERROR = ULONG;
 
-constexpr VIGEM_ERROR VIGEM_ERROR_NONE = 0;
+// ViGEm 错误码基值。成功返回 0x20000000，而非 0。
+// 参考 ViGEmBus 官方头文件：VIGEM_ERROR_NONE = 0x20000000
+constexpr VIGEM_ERROR VIGEM_ERROR_NONE = 0x20000000;
 
 // XUSB_REPORT 结构（与 ViGEmClient.h 一致）
 #pragma pack(push, 8)
