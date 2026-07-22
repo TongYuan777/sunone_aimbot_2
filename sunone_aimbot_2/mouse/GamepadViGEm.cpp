@@ -671,6 +671,7 @@ void GamepadViGEm::pollingThreadFunc()
             std::cout << " | activeIndex=" << playerIndex_
                       << ", virtual=" << virtualConnected_.load() << std::endl;
             lastHeartbeat = nowHeartbeat;
+        }
     }
 }
 
