@@ -169,6 +169,12 @@ public:
     bool check_target_in_scope(double target_x, double target_y,
         double target_w, double target_h, double reduction_factor);
 
+    // 手柄模式 B：当前输入设备是否为 GamepadViGEm
+    bool isGamepadMode() const;
+    // 基于目标位置直接计算归一化误差并驱动虚拟手柄右摇杆
+    void aimGamepadByTarget(double pivotX, double pivotY,
+        std::chrono::steady_clock::time_point observationTime = {});
+
     std::vector<std::pair<double, double>> predictFuturePositions(double pivotX, double pivotY, int frames);
     void storeFuturePositions(const std::vector<std::pair<double, double>>& positions);
     void clearFuturePositions();

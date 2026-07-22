@@ -78,6 +78,10 @@ public:
     // 移动（增量，鼠标 counts 语义）。内部转换为摇杆偏移
     bool move(int dx, int dy);
 
+    // 基于目标相对屏幕中心的归一化误差 [-1, 1] 直接设置右摇杆。
+    // 手柄模式 B 使用：真实手柄控制其余按键/左摇杆，虚拟手柄仅输出右摇杆瞄准修正。
+    void sendStickByError(float error_x, float error_y);
+
     // 虚拟手柄扳机/按键
     bool leftDown();
     bool leftUp();
@@ -191,6 +195,10 @@ private:
     float stickOffsetX_ = 0.0f;
     float stickOffsetY_ = 0.0f;
     std::chrono::steady_clock::time_point lastStickUpdate_;
+
+    // 手柄模式 B：由目标相对屏幕中心误差直接设定的右摇杆目标值 [-1, 1]
+    std::atomic<float> targetStickRx_{ 0.0f };
+    std::atomic<float> targetStickRy_{ 0.0f };
 
     // 禁止拷贝
     GamepadViGEm(const GamepadViGEm&) = delete;

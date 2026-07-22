@@ -278,6 +278,10 @@ void GamepadViGEm::close()
         vigem_->target_x360_update(vigem_->client, vigemTarget_, &report);
     }
 
+    // 清空目标摇杆误差，避免下次启动残留
+    targetStickRx_.store(0.0f);
+    targetStickRy_.store(0.0f);
+
     unloadViGEm();
 
     physicalConnected_.store(false);
@@ -334,6 +338,15 @@ bool GamepadViGEm::move(int dx, int dy)
     }
 
     return true;
+}
+
+void GamepadViGEm::sendStickByError(float error_x, float error_y)
+{
+    // 手柄模式 B：将目标相对屏幕中心的归一化误差映射到右摇杆 [-1, 1]。
+    // stickScale_ 在此模式下作为灵敏度倍率（100.0 = 1.0x），复用现有配置。
+    const float sensitivity = stickScale_ / 100.0f;
+    targetStickRx_.store(std::clamp(error_x * sensitivity, -1.0f, 1.0f));
+    targetStickRy_.store(std::clamp(error_y * sensitivity, -1.0f, 1.0f));
 }
 
 bool GamepadViGEm::leftDown()
@@ -583,15 +596,17 @@ void GamepadViGEm::pollingThreadFunc()
             zoomingActive_.store(false);
         }
 
-        // 3) 自瞄时叠加摇杆偏移到右摇杆（RX/RY），FPS 游戏通常用右摇杆控制视角
+        // 3) 手柄模式 B：右摇杆由目标相对屏幕中心的归一化误差直接驱动
         {
-            std::lock_guard<std::mutex> lock(stickMutex_);
+            // 读取目标误差（已 clamp 到 [-1, 1]）
+            float rx = targetStickRx_.load();
+            float ry = targetStickRy_.load();
 
-            // 把摇杆偏移转换为 short 值
+            // 转换为 short 摇杆值（Y 轴反转：屏幕坐标向下为正，摇杆 Y 向上为正）
             std::int16_t stickX = static_cast<std::int16_t>(std::clamp(
-                std::lround(stickOffsetX_), -32767L, 32767L));
+                std::lround(rx * 32767.0f), -32767L, 32767L));
             std::int16_t stickY = static_cast<std::int16_t>(std::clamp(
-                std::lround(-stickOffsetY_), -32767L, 32767L)); // Y 轴反转
+                std::lround(-ry * 32767.0f), -32767L, 32767L));
 
             // 应用死区
             if (std::abs(stickX) < deadzone_) stickX = 0;
@@ -608,20 +623,14 @@ void GamepadViGEm::pollingThreadFunc()
                 if (now - lastReportLog > std::chrono::milliseconds(500))
                 {
                     std::cout << "[Gamepad] sending RX=" << stickX << " RY=" << stickY
-                              << " rawOffset=(" << stickOffsetX_ << ", " << stickOffsetY_ << ")" << std::endl;
+                              << " error=(" << rx << ", " << ry << ")" << std::endl;
                     lastReportLog = now;
                 }
             }
 
-            // 摇杆偏移衰减（让摇杆自然回中）
-            // 衰减率：每 10ms 衰减 15%
-            constexpr float decayRate = 0.85f;
-            stickOffsetX_ *= decayRate;
-            stickOffsetY_ *= decayRate;
-
-            // 小于阈值时归零
-            if (std::abs(stickOffsetX_) < 1.0f) stickOffsetX_ = 0.0f;
-            if (std::abs(stickOffsetY_) < 1.0f) stickOffsetY_ = 0.0f;
+            // 本帧误差已消费，重置为 0；下一帧 mouse_thread_loop 会重新写入
+            targetStickRx_.store(0.0f);
+            targetStickRy_.store(0.0f);
         }
 
         // 4) 发送虚拟手柄报告

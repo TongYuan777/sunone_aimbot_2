@@ -310,7 +310,15 @@ void mouseThreadFunction(MouseThread& mouseThread)
         {
             if (activeTarget && hasAimObservation)
             {
-                mouseThread.moveMousePivot(activeTarget->pivotX, activeTarget->pivotY, detectionTimestamp);
+                // 手柄模式 B：虚拟手柄直接输出右摇杆瞄准修正；其它模式走鼠标移动逻辑
+                if (mouseThread.isGamepadMode())
+                {
+                    mouseThread.aimGamepadByTarget(activeTarget->pivotX, activeTarget->pivotY, detectionTimestamp);
+                }
+                else
+                {
+                    mouseThread.moveMousePivot(activeTarget->pivotX, activeTarget->pivotY, detectionTimestamp);
+                }
 
                 if (autoShoot)
                 {

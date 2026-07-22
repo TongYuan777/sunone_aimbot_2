@@ -50,6 +50,10 @@ public:
     virtual bool shootingActive() const { return false; }
     virtual bool zoomingActive() const { return false; }
 
+    // 手柄模式 B：基于目标相对屏幕中心的归一化误差 [-1, 1] 设置虚拟手柄右摇杆。
+    // 仅 GamepadViGEm 实现，其它输入方式默认无操作。
+    virtual void sendStickByError(float /*error_x*/, float /*error_y*/) {}
+
     virtual Arduino* arduino() { return nullptr; }
     virtual RP2350* rp2350() { return nullptr; }
     virtual GhubMouse* ghub() { return nullptr; }

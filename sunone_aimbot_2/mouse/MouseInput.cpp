@@ -605,6 +605,12 @@ public:
     bool zoomingActive() const override { return isOpen() && device_->zoomingActive(); }
     GamepadViGEm* gamepad() override { return device_.get(); }
 
+    void sendStickByError(float error_x, float error_y) override
+    {
+        if (device_)
+            device_->sendStickByError(error_x, error_y);
+    }
+
 private:
     std::unique_ptr<GamepadViGEm> device_;
 };

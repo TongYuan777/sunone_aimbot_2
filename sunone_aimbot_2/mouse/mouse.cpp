@@ -680,6 +680,43 @@ void MouseThread::moveMousePivot(
     }
 }
 
+bool MouseThread::isGamepadMode() const
+{
+    std::lock_guard<std::mutex> lock(inputDevicesMutex);
+    return mouseInput && mouseInput->gamepad() != nullptr;
+}
+
+void MouseThread::aimGamepadByTarget(
+    double pivotX,
+    double pivotY,
+    std::chrono::steady_clock::time_point observationTime)
+{
+    std::lock_guard lg(input_method_mutex);
+
+    if (observationTime.time_since_epoch().count() != 0)
+    {
+        auto cameraDelta = getMotionCompensationSince(observationTime);
+        pivotX -= cameraDelta.first;
+        pivotY -= cameraDelta.second;
+    }
+
+    auto predicted = predict_target_position(pivotX, pivotY, observationTime);
+
+    // 归一化误差：目标相对屏幕中心 / 半屏尺寸，映射到 [-1, 1]
+    float error_x = 0.0f;
+    float error_y = 0.0f;
+    if (center_x > 0.0)
+        error_x = static_cast<float>((predicted.first - center_x) / center_x);
+    if (center_y > 0.0)
+        error_y = static_cast<float>((predicted.second - center_y) / center_y);
+
+    {
+        std::lock_guard<std::mutex> lock(inputDevicesMutex);
+        if (mouseInput)
+            mouseInput->sendStickByError(error_x, error_y);
+    }
+}
+
 void MouseThread::clearQueuedMoves()
 {
     std::lock_guard<std::mutex> lock(queueMtx);
