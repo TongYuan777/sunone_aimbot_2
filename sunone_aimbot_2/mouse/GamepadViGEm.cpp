@@ -538,6 +538,16 @@ void GamepadViGEm::pollingThreadFunc()
         ZeroMemory(&xstate, sizeof(xstate));
         DWORD result = XInputGetState(static_cast<DWORD>(playerIndex_), &xstate);
         bool connected = (result == ERROR_SUCCESS);
+
+        // 诊断日志：物理手柄连接状态变化时输出
+        static bool lastLoggedConnected = true;
+        if (connected != lastLoggedConnected)
+        {
+            std::cout << "[Gamepad] physical connection changed: " << lastLoggedConnected
+                      << " -> " << connected << " (XInput result=" << result << ")" << std::endl;
+            lastLoggedConnected = connected;
+        }
+
         physicalConnected_.store(connected);
 
         if (connected)
