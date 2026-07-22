@@ -51,6 +51,17 @@ try {
             "-File", (Resolve-RepoPath "tools\setup_opencv_dml.ps1")
         ) + $setupArgs
         Invoke-External "powershell" $psArgs -DryRun:$DryRun
+        $opencvLayout = Get-OpenCvWorldLayout -Root $opencvDmlRoot -Configuration $Configuration
+    }
+
+    # 优先使用精简编译版（tools\build_opencv_minimal.ps1 的产物），
+    # 体积约 15-20 MB，仅包含 core/imgproc/imgcodecs/videoio 四个模块。
+    $opencvMinimalRoot = Resolve-RepoPath "sunone_aimbot_2\modules\opencv\build\dml_minimal"
+    $opencvMinimalLayout = Get-OpenCvWorldLayout -Root $opencvMinimalRoot -Configuration $Configuration
+    if ($opencvMinimalLayout) {
+        $opencvDmlRoot = $opencvMinimalRoot
+        $opencvLayout = $opencvMinimalLayout
+        Write-BuildStep "Using minimal OpenCV: $opencvDmlRoot" "dml"
     }
 
     $onnxDir = Find-LatestValidPackageDir -PackagePrefix "Microsoft.ML.OnnxRuntime.DirectML" -RequiredRelativeFiles @(
@@ -87,7 +98,8 @@ try {
         "-DCMAKE_MAKE_PROGRAM=$(ConvertTo-CMakePath $ninja)",
         "-DAIMBOT_USE_CUDA=OFF",
         "-DAIMBOT_ONNXRUNTIME_DIR=$(ConvertTo-CMakePath $onnxDir)",
-        "-DAIMBOT_DIRECTML_DIR=$(ConvertTo-CMakePath $directMlDir)"
+        "-DAIMBOT_DIRECTML_DIR=$(ConvertTo-CMakePath $directMlDir)",
+        "-DAIMBOT_OPENCV_DML_ROOT=$(ConvertTo-CMakePath $opencvDmlRoot)"
     )
     if ($ExtraCMakeArgs) {
         $cmakeArgs += $ExtraCMakeArgs

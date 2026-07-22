@@ -33,6 +33,7 @@
     <ClCompile Include="capture\duplication_api_capture.cpp" />
     <ClCompile Include="capture\virtual_camera.cpp" />
     <ClCompile Include="sunone_aimbot_2.cpp" />
+    <ClCompile Include="embedded_resource.cpp" />
     <ClCompile Include="overlay\draw_capture.cpp" />
     <ClCompile Include="overlay\draw_target.cpp" />
     <ClCompile Include="overlay\draw_mouse.cpp" />
@@ -74,6 +75,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="embedded_resources.rc" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="scr\data_collector.h" />
     <ClInclude Include="include\other_tools.h" />
     <ClInclude Include="include\memory_images.h" />
@@ -109,6 +113,7 @@
     <ClInclude Include="capture\duplication_api_capture.h" />
     <ClInclude Include="capture\virtual_camera.h" />
     <ClInclude Include="sunone_aimbot_2.h" />
+    <ClInclude Include="embedded_resource.h" />
     <ClInclude Include="runtime\thread_loops.h" />
     <ClInclude Include="detector\dml_detector.h" />
     <ClInclude Include="tensorrt\trt_monitor.h" />

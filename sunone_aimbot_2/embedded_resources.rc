@@ -1,0 +1,17 @@
+// 嵌入式 DLL 资源定义
+// 将项目自带的小型 DLL 嵌入 exe，启动时由 EmbeddedResource::ExtractAll() 释放到 exe 目录。
+// 这样分发时无需单独携带 rzctl.dll / ghub_mouse.dll。
+//
+// 资源 ID 与 embedded_resource.cpp 中的常量保持一致：
+//   101 = rzctl.dll
+//   102 = ghub_mouse.dll
+//
+// 资源类型 "DLL" 为自定义类型名，对应 FindResourceW(.., L"DLL")。
+//
+// 注意：.rc 文件中引用的 DLL 路径相对于本文件所在目录。
+// 若 DLL 文件缺失，rc.exe 编译会报错；请确保这两个 DLL 位于本工程目录下。
+
+#include <windows.h>
+
+101 DLL "rzctl.dll"
+102 DLL "ghub_mouse.dll"

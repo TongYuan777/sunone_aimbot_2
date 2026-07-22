@@ -33,6 +33,7 @@
 #include "mem/cpu_affinity_manager.h"
 #include "runtime/thread_loops.h"
 #include "benchmarks/provider_benchmark.h"
+#include "embedded_resource.h"
 
 #ifdef USE_CUDA
 #include "mem/gpu_resource_manager.h"
@@ -244,6 +245,10 @@ int main(int argc, char** argv)
     SetRandomConsoleTitle();
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_FATAL);
     SetWorkingDirectoryToExecutable();
+
+    // 释放嵌入到 exe 中的小 DLL（rzctl.dll / ghub_mouse.dll）到 exe 目录，
+    // 必须在创建输入设备（createInputDevices）之前完成。
+    EmbeddedResource::ExtractAll();
 
     if (benchmarks::IsProviderBenchmarkRequested(argc, argv))
     {

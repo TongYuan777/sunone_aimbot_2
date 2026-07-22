@@ -84,6 +84,7 @@
     <ClCompile Include="scr\data_collector.cpp" />
     <ClCompile Include="scr\other_tools.cpp" />
     <ClCompile Include="sunone_aimbot_2.cpp" />
+    <ClCompile Include="embedded_resource.cpp" />
     <ClCompile Include="tensorrt\nvinf.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DML|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -146,6 +147,7 @@
     <ClInclude Include="overlay\overlay.h" />
     <ClInclude Include="scr\data_collector.h" />
     <ClInclude Include="sunone_aimbot_2.h" />
+    <ClInclude Include="embedded_resource.h" />
     <ClInclude Include="runtime\thread_loops.h" />
     <ClInclude Include="tensorrt\nvinf.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DML|x64'">true</ExcludedFromBuild>
@@ -157,6 +159,9 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="rzctl.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="embedded_resources.rc" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -270,12 +275,19 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <StringPooling>true</StringPooling>
+      <OmitFramePointers>false</OmitFramePointers>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <AdditionalOptions>/Gw /Zc:inline %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <AdditionalDependencies>opencv_world4130.lib;WindowsApp.lib;d3d11.lib;dxgi.lib;dwmapi.lib;d2d1.lib;setupapi.lib;xinput9_1_0.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
