@@ -656,12 +656,28 @@ void GamepadViGEm::pollingThreadFunc()
         auto nowHeartbeat = std::chrono::steady_clock::now();
         if (nowHeartbeat - lastHeartbeat > std::chrono::seconds(3))
         {
-            std::cout << "[Gamepad] poll thread alive, physical=" << physicalConnected_.load()
-                      << ", virtual=" << virtualConnected_.load()
-                      << ", buttons=0x" << std::hex << buttons_
-                      << ", LT=" << static_cast<int>(leftTrigger_)
-                      << " RT=" << static_cast<int>(rightTrigger_)
-                      << std::dec << std::endl;
+            // 扫描所有 XInput 索引，帮助确认 ai 读的是哪个手柄
+            std::cout << "[Gamepad] XInput scan: ";
+            for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
+            {
+                XINPUT_STATE st{};
+                DWORD r = XInputGetState(i, &st);
+                std::cout << "[" << i << "]";
+                if (r == ERROR_SUCCESS)
+                {
+                    std::cout << "ok:0x" << std::hex << st.Gamepad.wButtons
+                              << " LT=" << static_cast<int>(st.Gamepad.bLeftTrigger)
+                              << " RT=" << static_cast<int>(st.Gamepad.bRightTrigger)
+                              << std::dec;
+                }
+                else
+                {
+                    std::cout << "disconnect(" << r << ")";
+                }
+                if (i + 1 < XUSER_MAX_COUNT) std::cout << ", ";
+            }
+            std::cout << " | activeIndex=" << playerIndex_
+                      << ", virtual=" << virtualConnected_.load() << std::endl;
             lastHeartbeat = nowHeartbeat;
         }
     }
