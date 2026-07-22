@@ -9,6 +9,8 @@
 #include "MouseInput.h"
 
 #include <atomic>
+#include <chrono>
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -375,16 +377,66 @@ public:
         if (!device || !device->isOpen())
             return false;
 
-        if (keyName == "LeftMouseButton" && device->monitorMouseLeft() == 1)
-            return true;
-        if (keyName == "RightMouseButton" && device->monitorMouseRight() == 1)
-            return true;
-        if (keyName == "MiddleMouseButton" && device->monitorMouseMiddle() == 1)
-            return true;
-        if (keyName == "X1MouseButton" && device->monitorMouseSide1() == 1)
-            return true;
-        if (keyName == "X2MouseButton" && device->monitorMouseSide2() == 1)
-            return true;
+        if (keyName == "LeftMouseButton")
+        {
+            int v = device->monitorMouseLeft();
+            static auto lastLog = std::chrono::steady_clock::time_point{};
+            auto now = std::chrono::steady_clock::now();
+            if (now - lastLog > std::chrono::milliseconds(500))
+            {
+                std::cout << "[KmboxNet] monitorMouseLeft=" << v << std::endl;
+                lastLog = now;
+            }
+            return v == 1;
+        }
+        if (keyName == "RightMouseButton")
+        {
+            int v = device->monitorMouseRight();
+            static auto lastLog = std::chrono::steady_clock::time_point{};
+            auto now = std::chrono::steady_clock::now();
+            if (now - lastLog > std::chrono::milliseconds(500))
+            {
+                std::cout << "[KmboxNet] monitorMouseRight=" << v << std::endl;
+                lastLog = now;
+            }
+            return v == 1;
+        }
+        if (keyName == "MiddleMouseButton")
+        {
+            int v = device->monitorMouseMiddle();
+            static auto lastLog = std::chrono::steady_clock::time_point{};
+            auto now = std::chrono::steady_clock::now();
+            if (now - lastLog > std::chrono::milliseconds(500))
+            {
+                std::cout << "[KmboxNet] monitorMouseMiddle=" << v << std::endl;
+                lastLog = now;
+            }
+            return v == 1;
+        }
+        if (keyName == "X1MouseButton")
+        {
+            int v = device->monitorMouseSide1();
+            static auto lastLog = std::chrono::steady_clock::time_point{};
+            auto now = std::chrono::steady_clock::now();
+            if (now - lastLog > std::chrono::milliseconds(500))
+            {
+                std::cout << "[KmboxNet] monitorMouseSide1=" << v << std::endl;
+                lastLog = now;
+            }
+            return v == 1;
+        }
+        if (keyName == "X2MouseButton")
+        {
+            int v = device->monitorMouseSide2();
+            static auto lastLog = std::chrono::steady_clock::time_point{};
+            auto now = std::chrono::steady_clock::now();
+            if (now - lastLog > std::chrono::milliseconds(500))
+            {
+                std::cout << "[KmboxNet] monitorMouseSide2=" << v << std::endl;
+                lastLog = now;
+            }
+            return v == 1;
+        }
 
         return logicalButtonPressed(
             keyName,
