@@ -575,15 +575,15 @@ void GamepadViGEm::pollingThreadFunc()
 
         if (connected)
         {
-            // 透传真实手柄的按键状态到虚拟手柄（除了摇杆，摇杆由自瞄控制）
+            // 透传真实手柄的按键状态到虚拟手柄（左摇杆保留真实输入，右摇杆由自瞄控制）
             report.wButtons = buttons_;
             report.bLeftTrigger = leftTrigger_;
             report.bRightTrigger = rightTrigger_;
-            report.sThumbRX = xstate.Gamepad.sThumbRX;
-            report.sThumbRY = xstate.Gamepad.sThumbRY;
+            report.sThumbLX = xstate.Gamepad.sThumbLX;
+            report.sThumbLY = xstate.Gamepad.sThumbLY;
         }
 
-        // 3) 自瞄时叠加摇杆偏移
+        // 3) 自瞄时叠加摇杆偏移到右摇杆（RX/RY），FPS 游戏通常用右摇杆控制视角
         {
             std::lock_guard<std::mutex> lock(stickMutex_);
 
@@ -597,8 +597,8 @@ void GamepadViGEm::pollingThreadFunc()
             if (std::abs(stickX) < deadzone_) stickX = 0;
             if (std::abs(stickY) < deadzone_) stickY = 0;
 
-            report.sThumbLX = stickX;
-            report.sThumbLY = stickY;
+            report.sThumbRX = stickX;
+            report.sThumbRY = stickY;
 
             // 诊断日志：当输出非零摇杆时，每 500ms 输出一次
             if (stickX != 0 || stickY != 0)
@@ -607,7 +607,7 @@ void GamepadViGEm::pollingThreadFunc()
                 auto now = std::chrono::steady_clock::now();
                 if (now - lastReportLog > std::chrono::milliseconds(500))
                 {
-                    std::cout << "[Gamepad] sending LX=" << stickX << " LY=" << stickY
+                    std::cout << "[Gamepad] sending RX=" << stickX << " RY=" << stickY
                               << " rawOffset=(" << stickOffsetX_ << ", " << stickOffsetY_ << ")" << std::endl;
                     lastReportLog = now;
                 }
