@@ -536,6 +536,20 @@ bool GamepadViGEm::zoomingActive() const
     return zoomingActive_.load();
 }
 
+// ============================================================================
+// Raw Input 后台读取（绕过 Windows 前台窗口限制）
+// ============================================================================
+
+namespace
+{
+std::uint64_t steadyClockMs()
+{
+    return static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+}
+
 void GamepadViGEm::pollingThreadFunc()
 {
     while (!stopFlag_.load())
@@ -675,20 +689,6 @@ void GamepadViGEm::pollingThreadFunc()
     }
 }
 
-// ============================================================================
-// Raw Input 后台读取（绕过 Windows 前台窗口限制）
-// ============================================================================
-
-namespace
-{
-std::uint64_t steadyClockMs()
-{
-    return static_cast<std::uint64_t>(
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now().time_since_epoch()).count());
-}
-}
-
 LRESULT CALLBACK GamepadViGEm::rawInputWndProcStatic(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (msg == WM_CREATE)
@@ -738,8 +738,12 @@ void GamepadViGEm::processRawInput(HRAWINPUT hRawInput)
     if (raw->header.dwType != RIM_TYPEHID)
         return;
 
-    const std::uint8_t* data = raw->hid.bRawData;
-    const DWORD reportSize = raw->hid.dwSizeHid;
+    // 兼容不同 Windows SDK 对 RAWINPUT 联合体的命名差异（有的匿名，有的为 data）。
+    // RAWINPUT 布局保证联合体紧跟在 RAWINPUTHEADER 之后，因此直接用偏移访问 RAWHID。
+    const RAWHID* hid = reinterpret_cast<const RAWHID*>(
+        reinterpret_cast<const std::uint8_t*>(raw) + sizeof(RAWINPUTHEADER));
+    const std::uint8_t* data = hid->bRawData;
+    const DWORD reportSize = hid->dwSizeHid;
 
     if (parseXusbHidReport(data, reportSize))
     {
