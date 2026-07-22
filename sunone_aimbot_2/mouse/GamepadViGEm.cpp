@@ -93,13 +93,15 @@ GamepadViGEm::GamepadViGEm(int playerIndex,
                            int deadzone,
                            const std::string& aimButton,
                            const std::string& shootButton,
-                           const std::string& zoomButton)
+                           const std::string& zoomButton,
+                           int pollIntervalMs)
     : playerIndex_(playerIndex)
     , stickScale_(stickScale)
     , deadzone_(deadzone)
     , aimButton_(aimButton)
     , shootButton_(shootButton)
     , zoomButton_(zoomButton)
+    , pollIntervalMs_(pollIntervalMs > 0 ? pollIntervalMs : 10)
     , lastStickUpdate_(std::chrono::steady_clock::now())
 {
 }
@@ -331,7 +333,8 @@ bool GamepadViGEm::isVirtualConnected() const
 void GamepadViGEm::updateConfig(float stickScale, int deadzone,
                                 const std::string& aimButton,
                                 const std::string& shootButton,
-                                const std::string& zoomButton)
+                                const std::string& zoomButton,
+                                int pollIntervalMs)
 {
     std::lock_guard<std::mutex> lock(stateMutex_);
     stickScale_ = stickScale;
@@ -339,6 +342,7 @@ void GamepadViGEm::updateConfig(float stickScale, int deadzone,
     aimButton_ = aimButton;
     shootButton_ = shootButton;
     zoomButton_ = zoomButton;
+    pollIntervalMs_.store(pollIntervalMs > 0 ? pollIntervalMs : 10);
 }
 
 bool GamepadViGEm::checkButton(const std::string& name) const
@@ -580,7 +584,8 @@ void GamepadViGEm::pollingThreadFunc()
             vigem_->target_x360_update(vigem_->client, vigemTarget_, &report);
         }
 
-        // 10ms 轮询周期
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // 轮询周期（可配置，决定虚拟手柄回报率 = 1000/interval Hz）
+        const int intervalMs = pollIntervalMs_.load();
+        std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs > 0 ? intervalMs : 10));
     }
 }

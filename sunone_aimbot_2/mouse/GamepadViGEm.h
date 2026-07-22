@@ -66,7 +66,8 @@ public:
                  int deadzone,
                  const std::string& aimButton,
                  const std::string& shootButton,
-                 const std::string& zoomButton);
+                 const std::string& zoomButton,
+                 int pollIntervalMs = 10);
     ~GamepadViGEm();
 
     // 打开设备（连接 XInput + 创建虚拟手柄）
@@ -95,7 +96,8 @@ public:
     void updateConfig(float stickScale, int deadzone,
                       const std::string& aimButton,
                       const std::string& shootButton,
-                      const std::string& zoomButton);
+                      const std::string& zoomButton,
+                      int pollIntervalMs);
 
     // -------- 手柄模式扩展 --------
 
@@ -138,6 +140,7 @@ private:
     std::string aimButton_;
     std::string shootButton_;
     std::string zoomButton_;
+    std::atomic<int> pollIntervalMs_{ 10 };  // 轮询周期(ms),atomic 便于轮询线程无锁读取
 
     // 状态
     std::atomic<bool> opened_{ false };

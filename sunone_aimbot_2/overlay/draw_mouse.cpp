@@ -1016,6 +1016,22 @@ static void draw_mouse_page(MouseSettingsPage page)
                 OverlayConfig_MarkDirty();
             }
 
+            // 轮询周期（决定虚拟手柄回报率 = 1000/interval Hz）
+            int pollInterval = config.gamepad_poll_interval_ms;
+            if (OverlayUI::SliderIntRow("轮询周期", &pollInterval, 1, 20, "%d", "##value",
+                    "虚拟手柄轮询周期(ms)，回报率 = 1000/周期 Hz。1ms=1000Hz，4ms=250Hz，10ms=100Hz。值越小越流畅但 CPU 占用越高"))
+            {
+                config.gamepad_poll_interval_ms = pollInterval;
+                OverlayConfig_MarkDirty();
+                input_method_changed.store(true);  // 需要重建手柄实例使新周期生效
+            }
+
+            // 显示当前回报率
+            {
+                int hz = 1000 / std::max(1, config.gamepad_poll_interval_ms);
+                ImGui::TextDisabled("当前回报率：%d Hz", hz);
+            }
+
             // -------- 实时按键显示 --------
             if (gamepad && gamepad->isPhysicalConnected())
             {

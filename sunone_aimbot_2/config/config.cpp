@@ -155,6 +155,7 @@ bool Config::loadConfig(const std::string& filename)
         gamepad_aim_button = "RT";
         gamepad_shoot_button = "A";
         gamepad_zoom_button = "LT";
+        gamepad_poll_interval_ms = 10;
 
         // Mouse shooting
         auto_shoot = false;
@@ -489,6 +490,7 @@ bool Config::loadConfig(const std::string& filename)
     gamepad_aim_button = get_string("gamepad_aim_button", "RT");
     gamepad_shoot_button = get_string("gamepad_shoot_button", "A");
     gamepad_zoom_button = get_string("gamepad_zoom_button", "LT");
+    gamepad_poll_interval_ms = static_cast<int>(get_long("gamepad_poll_interval_ms", 10));
 
     // Mouse shooting
     auto_shoot = get_bool("auto_shoot", false);
@@ -800,7 +802,8 @@ bool Config::saveConfig(const std::string& filename)
         << "gamepad_deadzone = " << gamepad_deadzone << "\n"
         << "gamepad_aim_button = " << gamepad_aim_button << "\n"
         << "gamepad_shoot_button = " << gamepad_shoot_button << "\n"
-        << "gamepad_zoom_button = " << gamepad_zoom_button << "\n\n";
+        << "gamepad_zoom_button = " << gamepad_zoom_button << "\n"
+        << "gamepad_poll_interval_ms = " << gamepad_poll_interval_ms << "\n\n";
 
     // Mouse shooting
     file << "# Mouse shooting\n"
