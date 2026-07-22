@@ -118,10 +118,13 @@ bool GamepadViGEm::loadViGEm()
     HMODULE lib = LoadLibraryA("ViGEmClient.dll");
     if (!lib)
     {
-        std::cerr << "[Gamepad] Failed to load ViGEmClient.dll. "
-                  << "Please install ViGEmBus driver." << std::endl;
+        const DWORD lastErr = GetLastError();
+        std::cerr << "[Gamepad] Failed to load ViGEmClient.dll (0x" << std::hex << lastErr
+                  << "). Please install ViGEmBus driver and place ViGEmClient.dll next to ai.exe."
+                  << std::endl;
         return false;
     }
+    std::cout << "[Gamepad] ViGEmClient.dll loaded." << std::endl;
 
     vigem_ = new ViGEmState{};
     vigem_->alloc = reinterpret_cast<PVIGEM_CLIENT(*)()>(
@@ -206,6 +209,7 @@ bool GamepadViGEm::open()
         unloadViGEm();
         return false;
     }
+    std::cout << "[Gamepad] vigem_alloc ok." << std::endl;
 
     VIGEM_ERROR err = vigem_->connect(vigem_->client);
     if (err != VIGEM_ERROR_NONE)
@@ -214,6 +218,7 @@ bool GamepadViGEm::open()
         unloadViGEm();
         return false;
     }
+    std::cout << "[Gamepad] vigem_connect ok." << std::endl;
 
     // 2) 创建虚拟 Xbox 360 控制器
     vigemTarget_ = vigem_->target_x360_alloc();
@@ -223,6 +228,7 @@ bool GamepadViGEm::open()
         unloadViGEm();
         return false;
     }
+    std::cout << "[Gamepad] vigem_target_x360_alloc ok." << std::endl;
 
     err = vigem_->target_add(vigem_->client, vigemTarget_);
     if (err != VIGEM_ERROR_NONE)
@@ -231,6 +237,7 @@ bool GamepadViGEm::open()
         unloadViGEm();
         return false;
     }
+    std::cout << "[Gamepad] vigem_target_add ok." << std::endl;
 
     virtualConnected_.store(true);
 
