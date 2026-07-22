@@ -300,7 +300,17 @@ bool GamepadViGEm::isOpen() const
 bool GamepadViGEm::move(int dx, int dy)
 {
     if (!isOpen())
+    {
+        static auto lastLog = std::chrono::steady_clock::time_point{};
+        auto now = std::chrono::steady_clock::now();
+        if (now - lastLog > std::chrono::seconds(2))
+        {
+            std::cerr << "[Gamepad] move() skipped: device not open (opened="
+                      << opened_.load() << ", virtualConnected=" << virtualConnected_.load() << ")" << std::endl;
+            lastLog = now;
+        }
         return false;
+    }
 
     // 把鼠标 counts 转换为摇杆偏移增量
     // stickScale_ 控制转换比例（counts -> 摇杆值）
@@ -314,6 +324,20 @@ bool GamepadViGEm::move(int dx, int dy)
     stickOffsetY_ = std::clamp(stickOffsetY_, -maxStick, maxStick);
 
     lastStickUpdate_ = std::chrono::steady_clock::now();
+
+    // 诊断日志：每 500ms 输出一次最近一次非零移动
+    if (dx != 0 || dy != 0)
+    {
+        static auto lastMoveLog = std::chrono::steady_clock::time_point{};
+        auto now = std::chrono::steady_clock::now();
+        if (now - lastMoveLog > std::chrono::milliseconds(500))
+        {
+            std::cout << "[Gamepad] move(" << dx << ", " << dy << ") scale=" << stickScale_
+                      << " offset=(" << stickOffsetX_ << ", " << stickOffsetY_ << ")" << std::endl;
+            lastMoveLog = now;
+        }
+    }
+
     return true;
 }
 
@@ -575,6 +599,19 @@ void GamepadViGEm::pollingThreadFunc()
 
             report.sThumbLX = stickX;
             report.sThumbLY = stickY;
+
+            // 诊断日志：当输出非零摇杆时，每 500ms 输出一次
+            if (stickX != 0 || stickY != 0)
+            {
+                static auto lastReportLog = std::chrono::steady_clock::time_point{};
+                auto now = std::chrono::steady_clock::now();
+                if (now - lastReportLog > std::chrono::milliseconds(500))
+                {
+                    std::cout << "[Gamepad] sending LX=" << stickX << " LY=" << stickY
+                              << " rawOffset=(" << stickOffsetX_ << ", " << stickOffsetY_ << ")" << std::endl;
+                    lastReportLog = now;
+                }
+            }
 
             // 摇杆偏移衰减（让摇杆自然回中）
             // 衰减率：每 10ms 衰减 15%
