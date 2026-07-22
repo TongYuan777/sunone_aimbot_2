@@ -658,7 +658,10 @@ void GamepadViGEm::pollingThreadFunc()
         {
             std::cout << "[Gamepad] poll thread alive, physical=" << physicalConnected_.load()
                       << ", virtual=" << virtualConnected_.load()
-                      << ", buttons=0x" << std::hex << buttons_ << std::dec << std::endl;
+                      << ", buttons=0x" << std::hex << buttons_
+                      << ", LT=" << static_cast<int>(leftTrigger_)
+                      << " RT=" << static_cast<int>(rightTrigger_)
+                      << std::dec << std::endl;
             lastHeartbeat = nowHeartbeat;
         }
     }
