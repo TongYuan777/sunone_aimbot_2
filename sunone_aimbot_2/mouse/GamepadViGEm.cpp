@@ -550,7 +550,14 @@ void GamepadViGEm::pollingThreadFunc()
             thumbLY_ = xstate.Gamepad.sThumbLY;
 
             // 更新自瞄/射击/缩放状态
-            aimingActive_.store(checkButton(aimButton_));
+            const bool wasAiming = aimingActive_.load();
+            const bool nowAiming = checkButton(aimButton_);
+            aimingActive_.store(nowAiming);
+            if (nowAiming != wasAiming)
+            {
+                std::cout << "[Gamepad] aimingActive changed: " << wasAiming << " -> " << nowAiming
+                          << " (aimButton=" << aimButton_ << ")" << std::endl;
+            }
             shootingActive_.store(checkButton(shootButton_));
             zoomingActive_.store(checkButton(zoomButton_));
 
