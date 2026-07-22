@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <iostream>
 
 #include "GamepadViGEm.h"
@@ -241,25 +242,11 @@ bool GamepadViGEm::open()
 
     virtualConnected_.store(true);
 
-    // 3) 检查物理手柄是否连接
-    XINPUT_STATE xstate{};
-    ZeroMemory(&xstate, sizeof(xstate));
-    DWORD result = XInputGetState(static_cast<DWORD>(playerIndex_), &xstate);
-    physicalConnected_.store(result == ERROR_SUCCESS);
-
-    if (!physicalConnected_.load())
-    {
-        std::cout << "[Gamepad] Warning: physical controller not connected at index "
-                  << playerIndex_ << ". Virtual controller is still active." << std::endl;
-    }
-    else
-    {
-        std::cout << "[Gamepad] Physical controller connected at index "
-                  << playerIndex_ << std::endl;
-    }
-
-    // 4) 启动轮询线程
+    // 3) 启动 Raw Input 后台监听线程（绕过 Windows 前台窗口限制）
     stopFlag_.store(false);
+    rawInputThread_ = std::thread(&GamepadViGEm::rawInputThreadFunc, this);
+
+    // 4) 启动轮询线程（处理瞄准状态 + 虚拟手柄输出）
     pollThread_ = std::thread(&GamepadViGEm::pollingThreadFunc, this);
 
     opened_.store(true);
@@ -273,8 +260,16 @@ void GamepadViGEm::close()
         return;
 
     stopFlag_.store(true);
+
     if (pollThread_.joinable())
         pollThread_.join();
+
+    // Raw Input 线程依赖 stopFlag_，join 前先唤醒消息泵
+    if (rawInputHwnd_)
+        PostMessageW(rawInputHwnd_, WM_NULL, 0, 0);
+
+    if (rawInputThread_.joinable())
+        rawInputThread_.join();
 
     // 发送归零报告
     if (vigem_ && vigem_->client && vigemTarget_)
@@ -530,34 +525,31 @@ bool GamepadViGEm::zoomingActive() const
 
 void GamepadViGEm::pollingThreadFunc()
 {
-    XINPUT_STATE xstate{};
-
     while (!stopFlag_.load())
     {
-        // 1) 轮询真实手柄
-        ZeroMemory(&xstate, sizeof(xstate));
-        DWORD result = XInputGetState(static_cast<DWORD>(playerIndex_), &xstate);
-        bool connected = (result == ERROR_SUCCESS);
+        // 1) 判断物理手柄是否活跃（由 Raw Input 线程异步更新）
+        // 如果 1000ms 内没有收到 Raw Input 数据，认为手柄已断开
+        const auto nowMs = steadyClockMs();
+        const auto lastMs = lastRawInputMs_.load();
+        bool connected = (lastMs != 0) && (nowMs - lastMs < 1000);
 
         // 诊断日志：物理手柄连接状态变化时输出
         static bool lastLoggedConnected = true;
         if (connected != lastLoggedConnected)
         {
             std::cout << "[Gamepad] physical connection changed: " << lastLoggedConnected
-                      << " -> " << connected << " (XInput result=" << result << ")" << std::endl;
+                      << " -> " << connected << " (rawInputAgeMs=" << (nowMs - lastMs) << ")" << std::endl;
             lastLoggedConnected = connected;
         }
 
         physicalConnected_.store(connected);
 
+        // 准备虚拟手柄报告
+        XUSB_REPORT_SIM report{};
+
         if (connected)
         {
             std::lock_guard<std::mutex> lock(stateMutex_);
-            buttons_ = xstate.Gamepad.wButtons;
-            leftTrigger_ = xstate.Gamepad.bLeftTrigger;
-            rightTrigger_ = xstate.Gamepad.bRightTrigger;
-            thumbLX_ = xstate.Gamepad.sThumbLX;
-            thumbLY_ = xstate.Gamepad.sThumbLY;
 
             // 更新自瞄/射击/缩放状态
             const bool wasAiming = aimingActive_.load();
@@ -571,8 +563,12 @@ void GamepadViGEm::pollingThreadFunc()
             shootingActive_.store(checkButton(shootButton_));
             zoomingActive_.store(checkButton(zoomButton_));
 
-            // 按键捕获：若处于捕获中，记录首个按下的按键
-            updateCaptureLocked();
+            // 透传真实手柄的按键状态到虚拟手柄（左摇杆保留真实输入，右摇杆由自瞄控制）
+            report.wButtons = buttons_;
+            report.bLeftTrigger = leftTrigger_;
+            report.bRightTrigger = rightTrigger_;
+            report.sThumbLX = thumbLX_;
+            report.sThumbLY = thumbLY_;
         }
         else
         {
@@ -585,19 +581,6 @@ void GamepadViGEm::pollingThreadFunc()
             aimingActive_.store(false);
             shootingActive_.store(false);
             zoomingActive_.store(false);
-        }
-
-        // 2) 准备虚拟手柄报告
-        XUSB_REPORT_SIM report{};
-
-        if (connected)
-        {
-            // 透传真实手柄的按键状态到虚拟手柄（左摇杆保留真实输入，右摇杆由自瞄控制）
-            report.wButtons = buttons_;
-            report.bLeftTrigger = leftTrigger_;
-            report.bRightTrigger = rightTrigger_;
-            report.sThumbLX = xstate.Gamepad.sThumbLX;
-            report.sThumbLY = xstate.Gamepad.sThumbLY;
         }
 
         // 3) 自瞄时叠加摇杆偏移到右摇杆（RX/RY），FPS 游戏通常用右摇杆控制视角
@@ -679,6 +662,194 @@ void GamepadViGEm::pollingThreadFunc()
             std::cout << " | activeIndex=" << playerIndex_
                       << ", virtual=" << virtualConnected_.load() << std::endl;
             lastHeartbeat = nowHeartbeat;
-        }
     }
 }
+
+// ============================================================================
+// Raw Input 后台读取（绕过 Windows 前台窗口限制）
+// ============================================================================
+
+namespace
+{
+std::uint64_t steadyClockMs()
+{
+    return static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+}
+
+LRESULT CALLBACK GamepadViGEm::rawInputWndProcStatic(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    if (msg == WM_CREATE)
+    {
+        auto* cs = reinterpret_cast<CREATESTRUCT*>(lParam);
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
+        return 0;
+    }
+
+    auto* self = reinterpret_cast<GamepadViGEm*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    if (self)
+        return self->rawInputWndProc(hwnd, msg, wParam, lParam);
+
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+LRESULT GamepadViGEm::rawInputWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    if (msg == WM_INPUT)
+    {
+        processRawInput(reinterpret_cast<HRAWINPUT>(lParam));
+        return 0;
+    }
+    if (msg == WM_INPUT_DEVICE_CHANGE)
+    {
+        if (wParam == GIDC_ARRIVAL)
+            std::cout << "[Gamepad] Raw Input device arrived." << std::endl;
+        else if (wParam == GIDC_REMOVAL)
+            std::cout << "[Gamepad] Raw Input device removed." << std::endl;
+        return 0;
+    }
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+void GamepadViGEm::processRawInput(HRAWINPUT hRawInput)
+{
+    UINT size = 0;
+    UINT headerSize = sizeof(RAWINPUTHEADER);
+    if (GetRawInputData(hRawInput, RID_INPUT, nullptr, &size, headerSize) != 0 || size == 0)
+        return;
+
+    std::vector<BYTE> buffer(size);
+    if (GetRawInputData(hRawInput, RID_INPUT, buffer.data(), &size, headerSize) != size)
+        return;
+
+    auto* raw = reinterpret_cast<RAWINPUT*>(buffer.data());
+    if (raw->header.dwType != RIM_TYPEHID)
+        return;
+
+    const std::uint8_t* data = raw->hid.bRawData;
+    const DWORD reportSize = raw->hid.dwSizeHid;
+
+    if (parseXusbHidReport(data, reportSize))
+    {
+        lastRawInputMs_.store(steadyClockMs());
+        physicalConnected_.store(true);
+
+        // 按键捕获：在 Raw Input 线程中处理，避免与轮询线程竞争
+        std::lock_guard<std::mutex> lock(stateMutex_);
+        updateCaptureLocked();
+    }
+}
+
+bool GamepadViGEm::parseXusbHidReport(const std::uint8_t* data, std::size_t size)
+{
+    if (!data || size < 13)
+        return false;
+
+    // Xbox 360 / ViGEm 标准 HID 输入报告（13 字节）：
+    // [0] report id
+    // [1] buttons low byte
+    // [2] buttons high byte
+    // [3] left trigger
+    // [4] right trigger
+    // [5..6]  left thumb X  (int16 little-endian)
+    // [7..8]  left thumb Y  (int16 little-endian)
+    // [9..10] right thumb X (int16 little-endian)
+    // [11..12] right thumb Y (int16 little-endian)
+    //
+    // 按钮位与 XINPUT_GAMEPAD_* / GamepadButton 命名空间一致。
+
+    std::uint16_t newButtons = data[1] | (static_cast<std::uint16_t>(data[2]) << 8);
+    std::uint8_t newLT = data[3];
+    std::uint8_t newRT = data[4];
+
+    // 简单合理性检查：至少报告大小符合，且不全是 0xFF（异常填充）
+    bool looksValid = (size == 13 || size == 14 || size == 18);
+    if (!looksValid)
+        return false;
+
+    auto readInt16 = [&](std::size_t offset) -> std::int16_t {
+        std::int16_t v = 0;
+        std::memcpy(&v, data + offset, sizeof(v));
+        return v;
+    };
+
+    {
+        std::lock_guard<std::mutex> lock(stateMutex_);
+        buttons_ = newButtons;
+        leftTrigger_ = newLT;
+        rightTrigger_ = newRT;
+        thumbLX_ = readInt16(5);
+        thumbLY_ = readInt16(7);
+    }
+
+    return true;
+}
+
+void GamepadViGEm::rawInputThreadFunc()
+{
+    HINSTANCE hInst = GetModuleHandleW(nullptr);
+
+    WNDCLASSEXW wc{};
+    wc.cbSize = sizeof(wc);
+    wc.lpfnWndProc = rawInputWndProcStatic;
+    wc.hInstance = hInst;
+    wc.lpszClassName = L"SunAimbotRawInputWindow";
+    if (!RegisterClassExW(&wc))
+    {
+        std::cerr << "[Gamepad] Failed to register Raw Input window class." << std::endl;
+        return;
+    }
+
+    rawInputHwnd_ = CreateWindowExW(
+        0, wc.lpszClassName, L"SunAimbotRawInput",
+        0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, hInst, this);
+
+    if (!rawInputHwnd_)
+    {
+        std::cerr << "[Gamepad] Failed to create Raw Input message window." << std::endl;
+        UnregisterClassW(wc.lpszClassName, hInst);
+        return;
+    }
+
+    RAWINPUTDEVICE rid{};
+    rid.usUsagePage = 0x01;          // Generic Desktop Controls
+    rid.usUsage = 0x05;              // Game Pad
+    rid.dwFlags = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
+    rid.hwndTarget = rawInputHwnd_;
+
+    if (!RegisterRawInputDevices(&rid, 1, sizeof(rid)))
+    {
+        std::cerr << "[Gamepad] Failed to register Raw Input device. Error: " << GetLastError() << std::endl;
+        DestroyWindow(rawInputHwnd_);
+        rawInputHwnd_ = nullptr;
+        UnregisterClassW(wc.lpszClassName, hInst);
+        return;
+    }
+
+    std::cout << "[Gamepad] Raw Input registered. Listening for gamepad input in background." << std::endl;
+
+    MSG msg{};
+    while (!stopFlag_.load())
+    {
+        // 等待 Raw Input 消息，最多 100ms 超时，便于及时响应 stopFlag
+        DWORD wait = MsgWaitForMultipleObjects(0, nullptr, FALSE, 100, QS_RAWINPUT);
+        if (wait == WAIT_OBJECT_0)
+        {
+            while (PeekMessageW(&msg, rawInputHwnd_, 0, 0, PM_REMOVE))
+            {
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
+        }
+    }
+
+    // 清理
+    RegisterRawInputDevices(&rid, 0, sizeof(rid)); // 注销
+    DestroyWindow(rawInputHwnd_);
+    rawInputHwnd_ = nullptr;
+    UnregisterClassW(wc.lpszClassName, hInst);
+    std::cout << "[Gamepad] Raw Input thread stopped." << std::endl;
+}
+

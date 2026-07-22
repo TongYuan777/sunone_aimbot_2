@@ -119,8 +119,15 @@ public:
     std::string pollCapturedButton();
 
 private:
-    // XInput 轮询线程
+    // XInput 轮询线程（处理瞄准状态 + 虚拟手柄输出）
     void pollingThreadFunc();
+
+    // Raw Input 后台读取线程（绕过 Windows 前台窗口限制）
+    void rawInputThreadFunc();
+    static LRESULT CALLBACK rawInputWndProcStatic(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    LRESULT rawInputWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    void processRawInput(HRAWINPUT hRawInput);
+    bool parseXusbHidReport(const std::uint8_t* data, std::size_t size);
 
     // ViGEm 动态加载
     bool loadViGEm();
@@ -167,7 +174,12 @@ private:
 
     // 轮询线程
     std::thread pollThread_;
+    std::thread rawInputThread_;
     std::atomic<bool> stopFlag_{ false };
+
+    // Raw Input 隐藏消息窗口
+    HWND rawInputHwnd_ = nullptr;
+    std::atomic<std::uint64_t> lastRawInputMs_{ 0 };
 
     // ViGEm 动态加载状态
     void* vigemLibrary_ = nullptr;       // HMODULE

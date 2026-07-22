@@ -464,6 +464,7 @@ target_link_libraries(ai PRIVATE
     setupapi
     WindowsApp
     xinput9_1_0
+    user32
 )
 
 if(NOT AIMBOT_USE_CUDA)
