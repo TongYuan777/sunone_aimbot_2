@@ -236,22 +236,38 @@ function Invoke-InstallerExtraction {
         [string]$ExtractRoot
     )
 
+    # OpenCV 官方包是 7-Zip SFX。尝试多种解压方式：
+    # 1. SFX 自带参数 -o<目录> -y
+    # 2. NSIS 静默安装 /S /D=<目录>
+    # 3. 系统已安装的 7-Zip (7z.exe)
+    # 4. .NET ZipFile（先重命名为 .zip 再解压，对 7z SFX 无效，仅作最后兜底尝试）
     $methods = @(
-        @("-o$ExtractRoot", "-y"),
-        @("/S", "/D=$ExtractRoot")
+        @{ Exe = $ExePath; Args = @("-o$ExtractRoot", "-y") },
+        @{ Exe = $ExePath; Args = @("/S", "/D=$ExtractRoot") }
     )
 
-    foreach ($extractArgs in $methods) {
-        $printable = $ExePath + " " + (($extractArgs | ForEach-Object {
+    # 探测系统 7-Zip
+    $sevenZipCandidates = @(
+        "$env:ProgramFiles\7-Zip\7z.exe",
+        "${env:ProgramFiles(x86)}\7-Zip\7z.exe"
+    ) | Where-Object { Test-Path -LiteralPath $_ }
+    if ($sevenZipCandidates) {
+        $methods += @{ Exe = $sevenZipCandidates[0]; Args = @("x", $ExePath, "-o$ExtractRoot", "-y") }
+    }
+
+    foreach ($entry in $methods) {
+        $exe = $entry.Exe
+        $extractArgs = $entry.Args
+        $printable = $exe + " " + (($extractArgs | ForEach-Object {
                     if ($_ -match "\s") { '"' + $_ + '"' } else { $_ }
                 }) -join " ")
-        Write-Step "Trying installer extraction: $printable"
+        Write-Step "Trying extraction: $printable"
 
         if ($DryRun) {
             continue
         }
 
-        $process = Start-Process -FilePath $ExePath -ArgumentList $extractArgs -PassThru -Wait
+        $process = Start-Process -FilePath $exe -ArgumentList $extractArgs -PassThru -Wait
         $exitCode = 0
         if ($null -ne $process) {
             $exitCode = $process.ExitCode
