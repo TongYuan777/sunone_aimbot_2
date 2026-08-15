@@ -390,7 +390,7 @@ void draw_depth()
             const auto frameSize = depthMask.lastFrameSize();
 
             ImGui::Separator();
-            ImGui::Text("遮罩运行时：%s", state.model_ready ? "ready" : "not ready");
+            ImGui::Text("遮罩运行时：%s", state.model_ready ? "已就绪" : "未就绪");
             ImGui::Text("遮罩模型路径：%s",
                 state.last_model_path.empty() ? "（无）" : state.last_model_path.c_str());
             if (frameSize.first > 0 && frameSize.second > 0)

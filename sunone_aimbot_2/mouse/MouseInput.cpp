@@ -515,9 +515,10 @@ public:
                            int deadzone,
                            const std::string& aimButton,
                            const std::string& shootButton,
-                           const std::string& zoomButton)
+                           const std::string& zoomButton,
+                           int pollIntervalMs)
         : device_(std::make_unique<GamepadViGEm>(
-              playerIndex, stickScale, deadzone, aimButton, shootButton, zoomButton))
+              playerIndex, stickScale, deadzone, aimButton, shootButton, zoomButton, pollIntervalMs))
     {
         device_->open();
     }
@@ -640,7 +641,8 @@ std::unique_ptr<IMouseInput> CreateMouseInputDevice(const Config& config)
             config.gamepad_deadzone,
             config.gamepad_aim_button,
             config.gamepad_shoot_button,
-            config.gamepad_zoom_button);
+            config.gamepad_zoom_button,
+            config.gamepad_poll_interval_ms);
     case MouseInputMethod::Win32:
     default:
         return std::make_unique<Win32MouseInput>();

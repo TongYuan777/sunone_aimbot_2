@@ -93,13 +93,15 @@ GamepadViGEm::GamepadViGEm(int playerIndex,
                            int deadzone,
                            const std::string& aimButton,
                            const std::string& shootButton,
-                           const std::string& zoomButton)
+                           const std::string& zoomButton,
+                           int pollIntervalMs)
     : playerIndex_(playerIndex)
     , stickScale_(stickScale)
     , deadzone_(deadzone)
     , aimButton_(aimButton)
     , shootButton_(shootButton)
     , zoomButton_(zoomButton)
+    , pollIntervalMs_(pollIntervalMs > 0 ? pollIntervalMs : 10)
     , lastStickUpdate_(std::chrono::steady_clock::now())
 {
 }
@@ -331,7 +333,8 @@ bool GamepadViGEm::isVirtualConnected() const
 void GamepadViGEm::updateConfig(float stickScale, int deadzone,
                                 const std::string& aimButton,
                                 const std::string& shootButton,
-                                const std::string& zoomButton)
+                                const std::string& zoomButton,
+                                int pollIntervalMs)
 {
     std::lock_guard<std::mutex> lock(stateMutex_);
     stickScale_ = stickScale;
@@ -339,6 +342,7 @@ void GamepadViGEm::updateConfig(float stickScale, int deadzone,
     aimButton_ = aimButton;
     shootButton_ = shootButton;
     zoomButton_ = zoomButton;
+    pollIntervalMs_.store(pollIntervalMs > 0 ? pollIntervalMs : 10);
 }
 
 bool GamepadViGEm::checkButton(const std::string& name) const
@@ -371,6 +375,109 @@ bool GamepadViGEm::isButtonPressed(const std::string& name) const
 {
     std::lock_guard<std::mutex> lock(stateMutex_);
     return checkButton(name);
+}
+
+std::vector<int> GamepadViGEm::getConnectedGamepadIndices()
+{
+    std::vector<int> indices;
+    for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
+    {
+        XINPUT_STATE st{};
+        ZeroMemory(&st, sizeof(st));
+        if (XInputGetState(i, &st) == ERROR_SUCCESS)
+            indices.push_back(static_cast<int>(i));
+    }
+    return indices;
+}
+
+void GamepadViGEm::collectPressedButtonsLocked(std::vector<std::string>& out) const
+{
+    out.clear();
+
+    // 数字按键
+    if (buttons_ & GamepadButton::A)            out.emplace_back(GamepadButtonName::A());
+    if (buttons_ & GamepadButton::B)            out.emplace_back(GamepadButtonName::B());
+    if (buttons_ & GamepadButton::X)            out.emplace_back(GamepadButtonName::X());
+    if (buttons_ & GamepadButton::Y)            out.emplace_back(GamepadButtonName::Y());
+    if (buttons_ & GamepadButton::LEFT_SHOULDER)  out.emplace_back(GamepadButtonName::LEFT_SHOULDER());
+    if (buttons_ & GamepadButton::RIGHT_SHOULDER) out.emplace_back(GamepadButtonName::RIGHT_SHOULDER());
+    if (buttons_ & GamepadButton::LEFT_THUMB)   out.emplace_back(GamepadButtonName::LEFT_THUMB());
+    if (buttons_ & GamepadButton::RIGHT_THUMB)  out.emplace_back(GamepadButtonName::RIGHT_THUMB());
+    if (buttons_ & GamepadButton::START)        out.emplace_back(GamepadButtonName::START());
+    if (buttons_ & GamepadButton::BACK)         out.emplace_back(GamepadButtonName::BACK());
+    if (buttons_ & GamepadButton::DPAD_UP)      out.emplace_back(GamepadButtonName::DPAD_UP());
+    if (buttons_ & GamepadButton::DPAD_DOWN)    out.emplace_back(GamepadButtonName::DPAD_DOWN());
+    if (buttons_ & GamepadButton::DPAD_LEFT)    out.emplace_back(GamepadButtonName::DPAD_LEFT());
+    if (buttons_ & GamepadButton::DPAD_RIGHT)   out.emplace_back(GamepadButtonName::DPAD_RIGHT());
+
+    // 扳机（超过阈值视为按下）
+    const int triggerThreshold = XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
+    if (leftTrigger_ > triggerThreshold)  out.emplace_back(GamepadButtonName::LEFT_TRIGGER());
+    if (rightTrigger_ > triggerThreshold) out.emplace_back(GamepadButtonName::RIGHT_TRIGGER());
+}
+
+std::vector<std::string> GamepadViGEm::getCurrentlyPressedButtons() const
+{
+    std::lock_guard<std::mutex> lock(stateMutex_);
+    std::vector<std::string> result;
+    collectPressedButtonsLocked(result);
+    return result;
+}
+
+void GamepadViGEm::beginCapture()
+{
+    std::lock_guard<std::mutex> lock(captureMutex_);
+    capturedButton_.clear();
+    hasCaptured_ = false;
+    capturing_.store(true);
+}
+
+void GamepadViGEm::cancelCapture()
+{
+    std::lock_guard<std::mutex> lock(captureMutex_);
+    capturedButton_.clear();
+    hasCaptured_ = false;
+    capturing_.store(false);
+}
+
+bool GamepadViGEm::isCapturing() const
+{
+    return capturing_.load();
+}
+
+std::string GamepadViGEm::pollCapturedButton()
+{
+    std::lock_guard<std::mutex> lock(captureMutex_);
+    if (!hasCaptured_)
+        return std::string();
+
+    std::string result;
+    result.swap(capturedButton_);
+    capturedButton_.clear();
+    hasCaptured_ = false;
+    capturing_.store(false);
+    return result;
+}
+
+void GamepadViGEm::updateCaptureLocked()
+{
+    // 调用者已持 stateMutex_
+    if (!capturing_.load())
+        return;
+
+    // 先收集当前按下的按键（无锁访问 buttons_/triggers_，因为已持 stateMutex_）
+    std::vector<std::string> pressed;
+    collectPressedButtonsLocked(pressed);
+    if (pressed.empty())
+        return;
+
+    std::lock_guard<std::mutex> capLock(captureMutex_);
+    // 锁内复检：避免与 cancelCapture() 之间的 TOCTOU 竞态
+    // （用户在收集按键后、获取锁前点击"停止"，此时不应再写入捕获结果）
+    if (!capturing_.load() || hasCaptured_)
+        return;
+    capturedButton_ = pressed.front();
+    hasCaptured_ = true;
 }
 
 bool GamepadViGEm::aimingActive() const
@@ -413,6 +520,9 @@ void GamepadViGEm::pollingThreadFunc()
             aimingActive_.store(checkButton(aimButton_));
             shootingActive_.store(checkButton(shootButton_));
             zoomingActive_.store(checkButton(zoomButton_));
+
+            // 按键捕获：若处于捕获中，记录首个按下的按键
+            updateCaptureLocked();
         }
         else
         {
@@ -474,7 +584,8 @@ void GamepadViGEm::pollingThreadFunc()
             vigem_->target_x360_update(vigem_->client, vigemTarget_, &report);
         }
 
-        // 10ms 轮询周期
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // 轮询周期（可配置，决定虚拟手柄回报率 = 1000/interval Hz）
+        const int intervalMs = pollIntervalMs_.load();
+        std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs > 0 ? intervalMs : 10));
     }
 }

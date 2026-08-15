@@ -83,68 +83,75 @@ inline SettingRow BeginSettingRow(const char* label, float height = 58.0f, float
     return { rowMin, rowMax, controlW };
 }
 
-inline void EndSettingRow(const SettingRow& row) noexcept
+inline void EndSettingRow(const SettingRow& row, const char* tooltip = nullptr) noexcept
 {
+    // tooltip：鼠标悬停整行时显示。用 row 矩形判断 hover（覆盖 label + 控件区域）
+    if (tooltip && *tooltip &&
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) &&
+        ImGui::IsMouseHoveringRect(row.min, row.max))
+    {
+        ImGui::SetTooltip("%s", tooltip);
+    }
     ImGui::SetCursorScreenPos(row.min);
     ImGui::Dummy(ImVec2(row.max.x - row.min.x, row.max.y - row.min.y));
     ImGui::PopID();
 }
 
-inline bool CheckboxRow(const char* label, bool* value, const char* id = "##value") noexcept
+inline bool CheckboxRow(const char* label, bool* value, const char* id = "##value", const char* tooltip = nullptr) noexcept
 {
     const SettingRow row = BeginSettingRow(label);
     const bool changed = ImGui::Checkbox(id, value);
-    EndSettingRow(row);
+    EndSettingRow(row, tooltip);
     return changed;
 }
 
-inline bool SliderIntRow(const char* label, int* value, int minValue, int maxValue, const char* format = "%d", const char* id = "##value") noexcept
+inline bool SliderIntRow(const char* label, int* value, int minValue, int maxValue, const char* format = "%d", const char* id = "##value", const char* tooltip = nullptr) noexcept
 {
     const SettingRow row = BeginSettingRow(label);
     const bool changed = ImGui::SliderInt(id, value, minValue, maxValue, format);
-    EndSettingRow(row);
+    EndSettingRow(row, tooltip);
     return changed;
 }
 
-inline bool SliderFloatRow(const char* label, float* value, float minValue, float maxValue, const char* format = "%.3f", const char* id = "##value") noexcept
+inline bool SliderFloatRow(const char* label, float* value, float minValue, float maxValue, const char* format = "%.3f", const char* id = "##value", const char* tooltip = nullptr) noexcept
 {
     const SettingRow row = BeginSettingRow(label);
     const bool changed = ImGui::SliderFloat(id, value, minValue, maxValue, format);
-    EndSettingRow(row);
+    EndSettingRow(row, tooltip);
     return changed;
 }
 
-inline bool InputTextRow(const char* label, char* buffer, size_t bufferSize, ImGuiInputTextFlags flags = 0, const char* id = "##value") noexcept
+inline bool InputTextRow(const char* label, char* buffer, size_t bufferSize, ImGuiInputTextFlags flags = 0, const char* id = "##value", const char* tooltip = nullptr) noexcept
 {
     const SettingRow row = BeginSettingRow(label);
     const bool changed = ImGui::InputText(id, buffer, bufferSize, flags);
-    EndSettingRow(row);
+    EndSettingRow(row, tooltip);
     return changed;
 }
 
-inline bool InputIntRow(const char* label, int* value, int step = 1, int stepFast = 100, ImGuiInputTextFlags flags = 0, const char* id = "##value") noexcept
+inline bool InputIntRow(const char* label, int* value, int step = 1, int stepFast = 100, ImGuiInputTextFlags flags = 0, const char* id = "##value", const char* tooltip = nullptr) noexcept
 {
     const SettingRow row = BeginSettingRow(label);
     const bool changed = ImGui::InputInt(id, value, step, stepFast, flags);
-    EndSettingRow(row);
+    EndSettingRow(row, tooltip);
     return changed;
 }
 
-inline bool ButtonRow(const char* label, const char* buttonText, const char* id = nullptr) noexcept
+inline bool ButtonRow(const char* label, const char* buttonText, const char* id = nullptr, const char* tooltip = nullptr) noexcept
 {
     ImGui::PushID(id ? id : label);
     const SettingRow row = BeginSettingRow(label);
     const bool clicked = ImGui::Button(buttonText, ImVec2(row.controlWidth, 0.0f));
-    EndSettingRow(row);
+    EndSettingRow(row, tooltip);
     ImGui::PopID();
     return clicked;
 }
 
-inline bool ComboRow(const char* label, int* currentItem, const char* const items[], int itemsCount, const char* id = "##value") noexcept
+inline bool ComboRow(const char* label, int* currentItem, const char* const items[], int itemsCount, const char* id = "##value", const char* tooltip = nullptr) noexcept
 {
     const SettingRow row = BeginSettingRow(label);
     const bool changed = ImGui::Combo(id, currentItem, items, itemsCount);
-    EndSettingRow(row);
+    EndSettingRow(row, tooltip);
     return changed;
 }
 

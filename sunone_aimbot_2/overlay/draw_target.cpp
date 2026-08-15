@@ -36,8 +36,8 @@ void draw_target()
 {
     if (OverlayUI::BeginSection("目标瞄准", "target_section_targeting"))
     {
-        OverlayUI::CheckboxRow("禁用爆头", &config.disable_headshot);
-        OverlayUI::CheckboxRow("自动瞄准", &config.auto_aim);
+        OverlayUI::CheckboxRow("禁用爆头", &config.disable_headshot, "##value", "启用后自瞄不会瞄准头部，仅瞄准身体");
+        OverlayUI::CheckboxRow("自动瞄准", &config.auto_aim, "##value", "自动选择最近的目标进行瞄准");
         OverlayUI::EndSection();
     }
 
@@ -46,8 +46,8 @@ void draw_target()
         ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "方向键：调整身体偏移");
         ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Shift+方向键：调整头部偏移");
 
-        OverlayUI::SliderFloatRow("身体 Y 偏移", &config.body_y_offset, 0.0f, 1.0f, "%.2f");
-        OverlayUI::SliderFloatRow("头部 Y 偏移", &config.head_y_offset, 0.0f, 1.0f, "%.2f");
+        OverlayUI::SliderFloatRow("身体 Y 偏移", &config.body_y_offset, 0.0f, 1.0f, "%.2f", "##value", "瞄准点相对身体中心的垂直偏移量");
+        OverlayUI::SliderFloatRow("头部 Y 偏移", &config.head_y_offset, 0.0f, 1.0f, "%.2f", "##value", "瞄准点相对头部中心的垂直偏移量");
         OverlayUI::EndSection();
     }
 
@@ -117,8 +117,8 @@ void draw_tracker()
 
     if (OverlayUI::BeginSection("状态", "tracker_section_status"))
     {
-        changed |= OverlayUI::CheckboxRow("启用追踪器", &config.tracker_enabled);
-        changed |= OverlayUI::CheckboxRow("显示目标表", &config.tracker_overlay_table_enabled);
+        changed |= OverlayUI::CheckboxRow("启用追踪器", &config.tracker_enabled, "##value", "启用目标追踪，减少目标切换频率");
+        changed |= OverlayUI::CheckboxRow("显示目标表", &config.tracker_overlay_table_enabled, "##value", "在叠层中显示当前追踪目标列表");
         ImGui::Text("模式：简单锁定");
         ImGui::Text("运行模式：%s", config.tracker_enabled ? "追踪器" : "最近目标");
         ImGui::Text("锁定追踪 ID：%d", lockedTrackId);

@@ -66,7 +66,8 @@ public:
                  int deadzone,
                  const std::string& aimButton,
                  const std::string& shootButton,
-                 const std::string& zoomButton);
+                 const std::string& zoomButton,
+                 int pollIntervalMs = 10);
     ~GamepadViGEm();
 
     // 打开设备（连接 XInput + 创建虚拟手柄）
@@ -95,7 +96,27 @@ public:
     void updateConfig(float stickScale, int deadzone,
                       const std::string& aimButton,
                       const std::string& shootButton,
-                      const std::string& zoomButton);
+                      const std::string& zoomButton,
+                      int pollIntervalMs);
+
+    // -------- 手柄模式扩展 --------
+
+    // 扫描 XInput 0-3 索引，返回当前已连接物理手柄的索引列表。
+    // 该函数不依赖实例（可直接在 UI 选择阶段调用），内部仅做轻量探测。
+    static std::vector<int> getConnectedGamepadIndices();
+
+    // 返回当前物理手柄按下的按键名称列表（如 {"A","RT"}）。
+    // 扳机按下超过阈值时也会被报告。物理手柄未连接时返回空。
+    std::vector<std::string> getCurrentlyPressedButtons() const;
+
+    // 按键捕获：启动后，下一次检测到任意按键按下会被记录。
+    // 调用方通过 pollCapturedButton() 取走结果并自动结束捕获。
+    void beginCapture();
+    void cancelCapture();
+    bool isCapturing() const;
+    // 返回捕获到的按键名；若尚未捕获到则返回空字符串。
+    // 取走结果后内部状态清空，捕获流程自动结束。
+    std::string pollCapturedButton();
 
 private:
     // XInput 轮询线程
@@ -107,6 +128,10 @@ private:
 
     // 按键名称 -> XInput 按钮/扳机
     bool checkButton(const std::string& name) const;
+    // 收集当前所有按下的按键名到 out（不加锁版本，调用者持锁）
+    void collectPressedButtonsLocked(std::vector<std::string>& out) const;
+    // 在轮询线程内处理捕获事件（调用者已持 stateMutex_）
+    void updateCaptureLocked();
 
     // 配置
     int playerIndex_;
@@ -115,6 +140,7 @@ private:
     std::string aimButton_;
     std::string shootButton_;
     std::string zoomButton_;
+    std::atomic<int> pollIntervalMs_{ 10 };  // 轮询周期(ms),atomic 便于轮询线程无锁读取
 
     // 状态
     std::atomic<bool> opened_{ false };
@@ -132,6 +158,12 @@ private:
     std::atomic<bool> aimingActive_{ false };
     std::atomic<bool> shootingActive_{ false };
     std::atomic<bool> zoomingActive_{ false };
+
+    // 按键捕获状态
+    std::atomic<bool> capturing_{ false };
+    std::mutex captureMutex_;
+    std::string capturedButton_;
+    bool hasCaptured_{ false };
 
     // 轮询线程
     std::thread pollThread_;

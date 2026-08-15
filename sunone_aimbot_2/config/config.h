@@ -112,6 +112,7 @@ public:
     std::string gamepad_aim_button;   // 自瞄触发按键 (如 "RT")
     std::string gamepad_shoot_button; // 射击触发按键 (如 "A")
     std::string gamepad_zoom_button;  // 缩放触发按键 (如 "LT")
+    int gamepad_poll_interval_ms;     // 虚拟手柄轮询周期 (ms),决定回报率 (1000/interval Hz)
 
     // Mouse shooting
     bool auto_shoot;
